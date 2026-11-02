@@ -1,5 +1,7 @@
 # JobPilot — a LangGraph agent that tailors job applications honestly
 
+[![tests](https://github.com/NiKeT972/jobpilot/actions/workflows/tests.yml/badge.svg)](https://github.com/NiKeT972/jobpilot/actions/workflows/tests.yml)
+
 Paste a job description and your resume. JobPilot parses the JD, researches the company with a tool call, retrieves evidence from your resume (RAG), scores your fit, rewrites bullets to use the JD's language in a loop, **checks every rewrite against your original resume so it never invents experience**, drafts a cover note, and pauses for your approval before building the final package: tailored bullets, cover note and likely interview questions.
 
 **Live demo:** https://jobpilot-agent-nine.vercel.app
@@ -41,6 +43,7 @@ Most "resume optimisers" push a single match score up by stuffing keywords, whic
 
 - **Loops with a hard stop:** `score_fit → tailor_bullets → verify_claims → score_fit` runs at most 2 rounds and stops early when nothing more can be tailored honestly.
 - **Stateless human-in-the-loop on serverless:** the paused state goes back to the browser; on resume the API rebuilds the graph and calls `update_state(..., as_node="draft_cover_note")`, so LangGraph continues from the interrupt.
+- **Tamper-proof paused state:** because the state round-trips through the browser, a user could otherwise edit it (e.g. slip in a bullet that never passed the honesty check). The API returns the paused state inside an HMAC-SHA256-signed token (`jobpilot/state_token.py`) and resumes only from a token it signed; edited tokens get a 400. Set `STATE_SIGNING_KEY` in production.
 - **Graceful degradation:** every LLM node has a deterministic fallback, so the demo works with no API keys; the UI tags each step as LLM, tool, rules or human.
 - **Tests:** every graph path, the honesty checker, skill matching and the LLM paths (with a stub model): `pytest -q`.
 

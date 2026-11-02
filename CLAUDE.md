@@ -12,8 +12,10 @@ Live: https://jobpilot-agent-nine.vercel.app (Vercel **auto-deploys on push to `
 - `jobpilot/retriever.py`: custom `BaseRetriever` (BM25 + synonym query expansion) over resume bullets.
 - `jobpilot/tools.py`: `@tool company_research` (Tavily if `TAVILY_API_KEY`, else Wikipedia API, else empty).
 - `jobpilot/samples.py`: two demo cases: `ai` (good match → review) and `de` (poor match → `gap_plan` early exit).
-- `public/index.html`: vanilla JS UI. It holds the paused state and posts it back on resume.
+- `public/index.html`: vanilla JS UI. It renders `state` and sends only the signed `token` back on resume.
 - `scripts/live_check.py`: drives both samples and every review path through a running server and prints each node's output.
+
+CI: `.github/workflows/tests.yml` runs `pytest -q` on push/PR (no keys needed).
 
 ## Run
 ```bash
@@ -27,9 +29,10 @@ Key: put `GROQ_API_KEY=...` in `.env` (gitignored; template in `.env.example`). 
 ## Design rules / gotchas
 - **Every LLM node has a rule-based fallback.** Pattern: `llm = get_llm(); if llm: try: ... return llm result; except Exception as e: llm_failed(node, e)` → then the rules path. Keep both paths working and tag trace entries with `mode` (`llm`/`rules`/`tool`/`human`); the UI shows it.
 - **Stateless human-in-the-loop:** compiled with `MemorySaver` + `interrupt_before=["human_review"]`, but each request builds a fresh graph. `resume()` re-seeds with `update_state(cfg, state, as_node="draft_cover_note")` so the next node is `human_review`. Don't rely on the checkpointer persisting between requests (serverless).
+- **Signed paused state:** `/api/run` and `/api/resume` return `token` (HMAC-SHA256 over zlib+base64 JSON, `jobpilot/state_token.py`) when paused; `/api/resume` takes `{token, decision: approve|revise, feedback}` and never accepts raw state. Key from `STATE_SIGNING_KEY`; without it a public dev key is used (`/api/health` shows `state_signing: false`). The UI sends `CUR.token`.
 - **Honesty check** (`verify_claims`) reverts rewrites that add a skill (per `skills.find_skills`) or a number not in the original bullet. Fit score depends only on the original resume; only ATS can rise with tailoring.
 - Tailor loop: max 2 rounds (`attempts`), routed in `route_after_score`; fit < 35 → `gap_plan`.
-- `tailor_bullets` LLM path matches returned items to bullets by **exact `original` text**. If the model rewords `original`, that bullet is silently dropped and, if none match, the rules path runs.
+- `tailor_bullets` LLM path numbers the bullets `[id]` in the prompt and the model returns `{id, rewritten}`; unknown ids are ignored, and if nothing usable comes back the rules path runs.
 - Structured output uses `llm.with_structured_output(PydanticModel)` (Groq tool calling). Groq returns `tool_use_failed` (400) when the model emits invalid arguments; that triggers the fallback and logs a warning.
 - **Tests must never hit the network:** `tests/test_jobpilot.py` sets `GROQ_API_KEY=""` *before* importing (not `pop`), so `load_dotenv(override=False)` can't pull a real key from `.env`. `company_research` is monkeypatched. LLM paths are tested with a stub model.
 - `uvicorn` and `pytest` live in `requirements-dev.txt`; `requirements.txt` is what Vercel installs.
