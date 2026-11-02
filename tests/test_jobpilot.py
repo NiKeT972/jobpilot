@@ -1,6 +1,8 @@
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-os.environ.pop("GROQ_API_KEY", None); os.environ.pop("TAVILY_API_KEY", None)
+# Set (not pop) the keys: load_dotenv(override=False) never replaces an existing variable, so a real key in
+# .env cannot leak into these offline tests. An empty string still means "no LLM".
+os.environ["GROQ_API_KEY"] = ""; os.environ["TAVILY_API_KEY"] = ""
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
@@ -96,3 +98,29 @@ def test_llm_paths(monkeypatch):
     assert modes["parse_jd"] == "llm" and modes["draft_cover_note"] == "llm"
     r = G.resume(r["state"], "approve")
     assert r["state"]["package"]["interview_questions"][0] == "q1"
+
+
+def test_dotenv_does_not_override_real_env(tmp_path, monkeypatch):
+    from dotenv import load_dotenv
+    import jobpilot.llm as L
+    env = tmp_path / ".env"
+    env.write_text("GROQ_API_KEY=from-dotenv-file\n")
+    monkeypatch.setenv("GROQ_API_KEY", "")
+    load_dotenv(env, override=False)            # same call llm.py makes at import
+    assert os.environ["GROQ_API_KEY"] == ""     # the existing (empty) value wins
+    assert not L.llm_available() and L.get_llm() is None
+
+
+def test_llm_error_falls_back_to_rules_and_logs(monkeypatch, caplog):
+    class Broken:
+        def with_structured_output(self, schema):
+            class R:
+                def invoke(_, prompt):
+                    raise ValueError("tool_use_failed")   # what Groq returns when the model emits bad JSON
+            return R()
+    monkeypatch.setattr(G, "get_llm", lambda *a, **k: Broken())
+    with caplog.at_level("WARNING", logger="jobpilot"):
+        r = G.start(AI["jd"], AI["resume"], "Razorpay")
+    assert r["paused_at"] == "human_review"
+    assert all(t["mode"] != "llm" for t in r["state"]["trace"])
+    assert "parse_jd failed" in caplog.text and "tool_use_failed" in caplog.text

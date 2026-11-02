@@ -24,7 +24,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
 from . import skills as SK
-from .llm import get_llm
+from .llm import get_llm, llm_failed
 from .retriever import ResumeRetriever, split_bullets
 from .tools import company_research
 
@@ -86,8 +86,8 @@ def parse_jd(s: AppState) -> dict:
             job["company"] = s.get("company") or job["company"]
             return {"job": job, "trace": _trace(s, "parse_jd", f"{job['title']}: {len(job['must_have'])} must-have, "
                                                 f"{len(job['nice_to_have'])} nice-to-have skills", "llm")}
-        except Exception:
-            pass
+        except Exception as e:
+            llm_failed("parse_jd", e)
 
     lines = [l.strip() for l in jd.splitlines() if l.strip()]
     lower = jd.lower()
@@ -182,8 +182,8 @@ def score_fit(s: AppState) -> dict:
             summary = llm.with_structured_output(FitNote).invoke(
                 f"Job: {job}\nSkill coverage: must={must} nice={nice}\nFit score {fit}/100. Write the summary.").summary
             mode = "llm"
-        except Exception:
-            pass
+        except Exception as e:
+            llm_failed("score_fit", e)
     elif s.get("fit", {}).get("summary"):
         summary = s["fit"]["summary"]
 
@@ -259,7 +259,8 @@ def tailor_bullets(s: AppState) -> dict:
                 if it:
                     new.append({"original": b, "rewritten": it.rewritten.strip(), "skill": ", ".join(ts), "status": "proposed"})
             mode = "llm"
-        except Exception:
+        except Exception as e:
+            llm_failed("tailor_bullets", e)
             new = []
     if not new:
         grouped: dict[str, list[str]] = {}
@@ -375,8 +376,8 @@ def draft_cover_note(s: AppState) -> dict:
             ).note
             return {"cover_note": note, "cover_version": v, "feedback": "",
                     "trace": _trace(s, "draft_cover_note", f"Version {v} written" + (" with your changes" if s.get("feedback") else ""), "llm")}
-        except Exception:
-            pass
+        except Exception as e:
+            llm_failed("draft_cover_note", e)
     return {"cover_note": _template_note(s), "cover_version": v, "feedback": "",
             "trace": _trace(s, "draft_cover_note", f"Version {v} from template" + (" with your changes" if s.get("feedback") else ""))}
 
@@ -411,8 +412,8 @@ def finalize(s: AppState) -> dict:
             qs = llm.with_structured_output(Prep).invoke(
                 f"Job: {job}\nCandidate resume: {current_bullets(s)}\nGaps: {gaps}\nList the questions.").questions
             mode = "llm"
-        except Exception:
-            pass
+        except Exception as e:
+            llm_failed("finalize", e)
     pkg = {"title": job["title"], "company": job.get("company", ""), "fit": s["fit"]["score"],
            "ats_before": s["ats"]["history"][0], "ats_after": s["ats"]["score"],
            "resume": current_bullets(s), "cover_note": s["cover_note"], "interview_questions": qs}
