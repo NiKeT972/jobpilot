@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobPilot — LangGraph job application agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--panel:#151b24;--panel2:#1b2330;--line:#263042;--ink:#e6edf3;--mute:#8b98a9;--brand:#f5a524;--brand2:#3a2a0b;--ok:#3fb950;--okbg:#12261a;--warn:#d29922;--warnbg:#2b220d;--bad:#f85149;--badbg:#2d1214;--llm:#79c0ff;--llmbg:#0f2236;--human:#bc8cff;--humanbg:#231a36}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 Inter,system-ui,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 26px;border-bottom:1px solid var(--line)}
+.logo{font-weight:700;font-size:19px;letter-spacing:-.02em}.logo b{color:var(--brand)}.sub{color:var(--mute);margin-left:12px;font-size:13px}
+.badge{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--llmbg);color:var(--llm);font-weight:600}.badge.off{background:var(--panel2);color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(330px,440px) 1fr;gap:20px;padding:20px 26px;max-width:1440px;margin:auto}
+@media(max-width:950px){main{grid-template-columns:1fr;padding:12px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+h2{font-size:14px;margin:0 0 12px;font-weight:600}h3{font-size:11.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
+label{display:block;color:var(--mute);font-size:12px;margin:10px 0 4px}
+input,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:8px 10px;font:inherit}
+textarea{resize:vertical;font-size:13px}
+.btn{background:var(--brand);color:#1a1200;border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}.btn.human{background:var(--human);color:#160b2b}
+.btn:disabled{opacity:.5;cursor:wait}.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.range{display:flex;gap:10px;align-items:center}.range input{flex:1;padding:0}
+.empty{color:var(--mute);text-align:center;padding:60px 20px}
+.trace{list-style:none;margin:0;padding:0}.trace li{display:flex;gap:12px;padding:6px 0;position:relative}
+.trace li:before{content:"";position:absolute;left:11px;top:30px;bottom:-6px;width:2px;background:var(--line)}.trace li:last-child:before{display:none}
+.dot{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--panel2);color:var(--mute);border:1px solid var(--line);z-index:1}
+.dot.llm{background:var(--llmbg);color:var(--llm)}.dot.tool{background:var(--brand2);color:var(--brand)}.dot.human{background:var(--humanbg);color:var(--human)}.dot.pause{background:var(--warnbg);color:var(--warn)}
+.tn{font-family:"JetBrains Mono",monospace;font-size:12.5px}.td{color:var(--mute);font-size:13px}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:99px;margin-left:6px;font-weight:600}
+.tag.rules{background:var(--panel2);color:var(--mute)}.tag.llm{background:var(--llmbg);color:var(--llm)}.tag.tool{background:var(--brand2);color:var(--brand)}.tag.human{background:var(--humanbg);color:var(--human)}
+.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media(max-width:1100px){.scores{grid-template-columns:1fr}}
+.big{font-size:38px;font-weight:700;letter-spacing:-.03em}.big small{font-size:15px;color:var(--mute);font-weight:500}
+.bar{height:6px;background:var(--panel2);border-radius:9px;margin-top:8px;overflow:hidden}.bar div{height:100%;border-radius:9px}
+.arrow{color:var(--ok);font-size:20px;margin:0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid}
+.chip.matched{background:var(--okbg);color:var(--ok);border-color:#1f4d2b}.chip.partial{background:var(--warnbg);color:var(--warn);border-color:#4d3b12}.chip.missing{background:var(--badbg);color:var(--bad);border-color:#5a1d1f}
+.diff{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;background:var(--panel2)}
+.diff .o{color:var(--mute);text-decoration:line-through;text-decoration-color:#5a1d1f;font-size:13px}.diff .n{margin-top:4px}
+.diff .n mark{background:#3a2a0b;color:var(--brand);padding:0 2px;border-radius:3px}
+.st{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px}.st.accepted{background:var(--okbg);color:var(--ok)}.st.reverted{background:var(--badbg);color:var(--bad)}
+.panel{border:1.5px solid var(--human);background:linear-gradient(180deg,var(--humanbg),var(--panel) 60%)}.panel h2{color:var(--human)}
+.note{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+ol,ul.plain{margin:6px 0;padding-left:20px}li{margin:3px 0}
+.done{background:var(--okbg);color:var(--ok);border-radius:10px;padding:12px 14px;font-weight:600}
+.warnbox{background:var(--warnbg);color:#e8c26b;border-radius:10px;padding:12px 14px}
+.copy{float:right;font-size:12px;padding:4px 10px}
+details summary{cursor:pointer;color:var(--mute);font-size:13px}.mermaid{background:#fff;border-radius:10px;padding:10px;overflow:auto}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes s{to{transform:rotate(360deg)}}
+footer{color:var(--mute);font-size:12px;text-align:center;padding:6px 0 28px}
+a{color:var(--llm)}
+</style>
+</head>
+<body>
+<header><div><span class="logo">Job<b>Pilot</b></span><span class="sub">LangGraph agent that researches, scores and tailors your application — without inventing experience</span></div><span id="mode" class="badge off">checking…</span></header>
+<main>
+<section>
+  <div class="card">
+    <h2>Inputs</h2>
+    <div class="btns" style="margin-top:0" id="sampleBtns"></div>
+    <label>Company</label><input id="company" placeholder="e.g. Razorpay">
+    <label>Job description</label><textarea id="jd" rows="11" placeholder="Paste the full JD"></textarea>
+    <label>Your resume (plain text, one bullet per line)</label><textarea id="resume" rows="11"></textarea>
+    <label>Target ATS keyword match</label><div class="range"><input type="range" id="target" min="40" max="100" step="5" value="75" oninput="tv.textContent=this.value"><b id="tv">75</b></div>
+    <div class="btns"><button class="btn" id="runBtn" onclick="run()">Run agent</button></div>
+  </div>
+  <div class="card"><details><summary>Agent graph (LangGraph, generated from the code)</summary><pre class="mermaid" id="graph"></pre></details></div>
+</section>
+<section id="out"><div class="card empty">Pick a sample or paste a JD and your resume, then run the agent.<br>You'll see every LangGraph step: the company research tool call, RAG over your resume, the tailoring loop, the honesty check, and a pause for your approval.</div></section>
+</main>
+<footer>JobPilot · portfolio project by Niket Korgaonkar · LangGraph + LangChain + FastAPI · sample JDs are illustrative and the sample candidate is fictional</footer>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window._mermaid=mermaid;mermaid.initialize({startOnLoad:false,theme:"neutral"});if(window._graphSrc)renderGraph();
+</script>
+<script>
+let META,CUR;const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function api(p,b){const r=await fetch(p,b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{});if(!r.ok)throw new Error(await r.text());return r.json()}
+function renderGraph(){if(window._mermaid&&window._graphSrc){$("graph").textContent=window._graphSrc;window._mermaid.run({nodes:[$("graph")]}).catch(()=>{})}}
+async function init(){
+  api("/api/health").then(h=>{$("mode").textContent=h.llm?`LLM online · ${h.model}`:"Built-in mode (no LLM key)";$("mode").className="badge"+(h.llm?"":" off")}).catch(()=>$("mode").textContent="API offline");
+  META=await api("/api/meta");
+  $("sampleBtns").innerHTML=Object.entries(META.samples).map(([k,v])=>`<button class="btn ghost" onclick="load('${k}')">${esc(v.label)}</button>`).join("");
+  window._graphSrc=META.graph.replace(/^---[\s\S]*?---\s*/,"");renderGraph();load("ai");
+}
+function load(k){const s=META.samples[k];$("company").value=s.company;$("jd").value=s.jd;$("resume").value=s.resume}
+function busy(b,btn){document.querySelectorAll("button").forEach(x=>x.disabled=b);if(btn){btn.dataset.t=btn.dataset.t||btn.innerHTML;btn.innerHTML=b?'<span class="spinner"></span>Working…':btn.dataset.t}}
+async function run(){busy(true,$("runBtn"));try{CUR=await api("/api/run",{jd_text:$("jd").value,resume_text:$("resume").value,company:$("company").value,target_ats:+$("target").value});render()}catch(e){alert("Please paste a JD and a resume (at least a few lines each).\n\n"+e.message)}busy(false,$("runBtn"))}
+async function decide(d,el){const fb=$("fb")?.value||"";if(d==="revise"&&!fb){alert("Tell the agent what to change.");return}busy(true,el);try{CUR=await api("/api/resume",{state:CUR.state,decision:d,feedback:fb});render()}catch(e){alert(e.message)}busy(false,el)}
+function color(v){return v>=70?"var(--ok)":v>=45?"var(--warn)":"var(--bad)"}
+function hl(t,o){return esc(t).replace(/\(([^()]+)\)/g,(m,x)=>o.includes("("+x+")")?m:`(<mark>${x}</mark>)`)}
+function copy(id,btn){navigator.clipboard.writeText($(id).innerText);btn.textContent="Copied";setTimeout(()=>btn.textContent="Copy",1200)}
+function render(){
+  const s=CUR.state,p=CUR.paused_at;let h="";
+  const tagOf=m=>m==="llm"?"LLM":m;
+  h+=`<div class="card"><h2>Agent run</h2><ul class="trace">`+s.trace.map((t,i)=>`<li><div class="dot ${t.mode}">${t.mode==="human"?"👤":t.mode==="tool"?"⚙":i+1}</div><div><span class="tn">${esc(t.node)}</span><span class="tag ${t.mode}">${tagOf(t.mode)}</span><div class="td">${esc(t.detail)}</div></div></li>`).join("")
+    +(p?`<li><div class="dot pause">⏸</div><div><span class="tn">${p}</span><span class="tag human">waiting for you</span><div class="td">LangGraph interrupt: nothing is final until you approve</div></div></li>`:"")+`</ul></div>`;
+  const f=s.fit,a=s.ats;
+  if(f){const hist=a.history;h+=`<div class="card"><div class="scores">
+     <div><h3 style="margin-top:0">Real fit</h3><div class="big" style="color:${color(f.score)}">${f.score}<small>/100</small></div><div class="bar"><div style="width:${f.score}%;background:${color(f.score)}"></div></div><div class="td" style="margin-top:6px">Skills you actually have (synonym-aware). Tailoring can't change this.</div></div>
+     <div><h3 style="margin-top:0">ATS keyword match</h3><div class="big">${hist[0]}<span class="arrow">→</span><span style="color:${color(a.score)}">${a.score}</span><small>/100</small></div><div class="bar"><div style="width:${a.score}%;background:${color(a.score)}"></div></div><div class="td" style="margin-top:6px">JD's exact words in your resume, after ${hist.length-1} tailoring round(s). Target ${s.target_ats}.</div></div>
+     <div><h3 style="margin-top:0">Agent's read</h3><div class="td" style="color:var(--ink)">${esc(f.summary)}</div></div></div>
+     <h3>Must-have skills</h3><div class="chips">${Object.entries(f.must).map(([k,v])=>`<span class="chip ${v}">${v==="matched"?"✓":v==="partial"?"~":"✕"} ${esc(k)}</span>`).join("")}</div>
+     ${Object.keys(f.nice).length?`<h3>Nice to have</h3><div class="chips">${Object.entries(f.nice).map(([k,v])=>`<span class="chip ${v}">${v==="matched"?"✓":v==="partial"?"~":"✕"} ${esc(k)}</span>`).join("")}</div>`:""}</div>`}
+  const ci=s.company_info||{};
+  if(ci.summary)h+=`<div class="card"><h2>Company research <span class="tag tool">tool · ${esc(ci.source)}</span></h2><div class="td" style="color:var(--ink)">${esc(ci.summary)}</div>${(ci.links||[]).filter(Boolean).map(l=>`<a href="${esc(l)}" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">${esc(l.replace(/^https?:\/\//,"").slice(0,48))}</a>`).join("")}</div>`;
+  if(s.tailored?.length)h+=`<div class="card"><h2>Tailored bullets <span class="tag rules">honesty-checked</span></h2><div class="td">Each rewrite only re-words what's already in your resume using the JD's terms. Anything that adds a skill or number you didn't have is reverted.</div>`
+     +s.tailored.map(t=>`<div class="diff"><div class="o">${esc(t.original)}</div><div class="n">${hl(t.rewritten,t.original)}<span class="st ${t.status}">${t.status}</span></div>${t.reason?`<div class="td" style="color:var(--bad)">Reverted: ${esc(t.reason)}</div>`:""}</div>`).join("")+`</div>`;
+  if(s.status==="not_recommended"){const pl=s.plan;h+=`<div class="card"><h2>Recommendation</h2><div class="warnbox">${esc(pl.recommendation)}</div><h3>Gap plan</h3><ol>${pl.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>`}
+  if(p==="human_review")h+=`<div class="card panel"><h2>👤 Review your cover note</h2><div class="td" style="margin-bottom:8px">Version ${s.cover_version}. Approve to build the final package, or tell the agent what to change.</div><div class="note">${esc(s.cover_note)}</div>
+     <label>Changes</label><input id="fb" placeholder="e.g. Mention I can join immediately and keep it under 120 words">
+     <div class="btns"><button class="btn human" onclick="decide('approve',this)">Approve</button><button class="btn ghost" onclick="decide('revise',this)">Revise</button></div></div>`;
+  if(s.status==="ready"){const k=s.package;h+=`<div class="card"><div class="done">✓ Application package ready for ${esc(k.title)}${k.company?" at "+esc(k.company):""} · fit ${k.fit} · ATS ${k.ats_before} → ${k.ats_after}</div></div>
+     <div class="grid2"><div class="card"><h2>Tailored resume bullets <button class="btn ghost copy" onclick="copy('pr',this)">Copy</button></h2><ul class="plain" id="pr">${k.resume.map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>
+     <div class="card"><h2>Cover note <button class="btn ghost copy" onclick="copy('pc',this)">Copy</button></h2><div class="note" id="pc">${esc(k.cover_note)}</div></div></div>
+     <div class="card"><h2>Likely interview questions</h2><ol>${k.interview_questions.map(q=>`<li>${esc(q)}</li>`).join("")}</ol></div>`}
+  $("out").innerHTML=h;$("out").scrollIntoView({behavior:"smooth",block:"start"});
+}
+init();
+</script>
+</body>
+</html>
