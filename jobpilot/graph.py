@@ -225,9 +225,8 @@ def _group(pairs):
 
 
 class Rewrite(BaseModel):
-    original: str
-    rewritten: str
-    skill: str
+    id: int = Field(description="The [id] of the bullet being rewritten")
+    rewritten: str = Field(description="The rewritten bullet")
 
 
 class Rewrites(BaseModel):
@@ -248,17 +247,21 @@ def tailor_bullets(s: AppState) -> dict:
     llm = get_llm(0.2)
     if llm is not None and pairs:
         try:
+            # Each bullet gets a numeric id and the model returns {id, rewritten}. Matching on the id (rather than
+            # asking the model to echo the original text back exactly) survives small changes in how it copies text.
+            groups = list(_group(pairs).items())
             r: Rewrites = llm.with_structured_output(Rewrites).invoke(
-                "Rewrite each resume bullet so it uses the job description's exact term, keeping it truthful. Rules: "
+                "Rewrite each resume bullet so it uses the listed job-description terms, keeping it truthful. Rules: "
                 "keep every fact, tool and number from the original; do NOT add tools, skills, numbers or claims "
-                "that are not in the original; start with a strong verb; max 30 words.\n\n"
-                + "\n".join(f"- terms: {', '.join(ts)} | original: {cur[b]}" for b, ts in _group(pairs).items()))
-            by_orig = {it.original.strip(): it for it in r.items}
-            for b, ts in _group(pairs).items():
-                it = by_orig.get(cur[b].strip())
-                if it:
+                "that are not in the original; use a term only where the original already shows that skill "
+                "(e.g. 'GPT-4' -> 'GPT-4 (LLMs)'); start with a strong verb; max 30 words. "
+                "Return one item per bullet with its [id].\n\n"
+                + "\n".join(f"[{i}] terms: {', '.join(ts)} | original: {cur[b]}" for i, (b, ts) in enumerate(groups)))
+            for it in r.items:
+                if 0 <= it.id < len(groups) and it.rewritten.strip():
+                    b, ts = groups[it.id]
                     new.append({"original": b, "rewritten": it.rewritten.strip(), "skill": ", ".join(ts), "status": "proposed"})
-            mode = "llm"
+            mode = "llm" if new else "rules"
         except Exception as e:
             llm_failed("tailor_bullets", e)
             new = []

@@ -35,10 +35,10 @@ def test_good_match_loops_then_pauses_then_finalizes():
     assert s["fit"]["must"]["LangGraph"] == "missing"          # honest: sample resume has no LangGraph
     assert all(t["status"] in ("accepted", "reverted") for t in s["tailored"])
     assert "Indian fintech" in s["cover_note"]
-    r2 = c.post("/api/resume", json={"state": s, "decision": "revise", "feedback": "mention I can join immediately"}).json()
+    r2 = c.post("/api/resume", json={"token": r["token"], "decision": "revise", "feedback": "mention I can join immediately"}).json()
     assert r2["paused_at"] == "human_review" and r2["state"]["cover_version"] == 2
     assert "join immediately" in r2["state"]["cover_note"].lower()
-    r3 = c.post("/api/resume", json={"state": r2["state"], "decision": "approve"}).json()
+    r3 = c.post("/api/resume", json={"token": r2["token"], "decision": "approve"}).json()
     assert r3["paused_at"] is None and r3["state"]["status"] == "ready"
     assert len(r3["state"]["package"]["interview_questions"]) >= 4
 
@@ -80,8 +80,8 @@ class Stub:
                     return schema(summary="Good fit. Gap: LangGraph.")
                 if n == "Rewrites":
                     import re
-                    items = [schema.model_fields["items"].annotation.__args__[0](original=m.group(2), rewritten=m.group(2) + " using LLMs", skill=m.group(1))
-                             for m in re.finditer(r"- terms: (.*?) \| original: (.*)", prompt)]
+                    items = [schema.model_fields["items"].annotation.__args__[0](id=int(m.group(1)), rewritten=m.group(2) + " using LLMs")
+                             for m in re.finditer(r"\[(\d+)\] terms: .*? \| original: (.*)", prompt)]
                     return schema(items=items)
                 if n == "CoverNote":
                     return schema(note="Dear team, ...")
@@ -124,3 +124,55 @@ def test_llm_error_falls_back_to_rules_and_logs(monkeypatch, caplog):
     assert r["paused_at"] == "human_review"
     assert all(t["mode"] != "llm" for t in r["state"]["trace"])
     assert "parse_jd failed" in caplog.text and "tool_use_failed" in caplog.text
+
+
+def _start_ai():
+    return c.post("/api/run", json={"jd_text": AI["jd"], "resume_text": AI["resume"], "company": AI["company"]}).json()
+
+
+def test_tampered_token_is_rejected():
+    import base64, json, zlib
+    r = _start_ai()
+    body, sig = r["token"].rsplit(".", 1)
+    paused = json.loads(zlib.decompress(base64.urlsafe_b64decode(body)))
+    paused["state"]["tailored"][0]["rewritten"] = "Led a 50-person LangGraph team at Google"   # invented claim
+    forged = base64.urlsafe_b64encode(zlib.compress(json.dumps(paused).encode())).decode() + "." + sig
+    res = c.post("/api/resume", json={"token": forged, "decision": "approve"})
+    assert res.status_code == 400 and "no longer valid" in res.json()["detail"]
+    assert c.post("/api/resume", json={"token": "garbage", "decision": "approve"}).status_code == 400
+
+
+def test_token_signed_with_other_key_is_rejected(monkeypatch):
+    r = _start_ai()
+    monkeypatch.setenv("STATE_SIGNING_KEY", "rotated-key")
+    assert c.post("/api/resume", json={"token": r["token"], "decision": "approve"}).status_code == 400
+
+
+def test_resume_input_validation():
+    r = _start_ai()
+    assert c.post("/api/resume", json={"token": r["token"], "decision": "publish"}).status_code == 422
+    assert c.post("/api/resume", json={"token": r["token"], "decision": "revise", "feedback": "  "}).status_code == 422
+    assert c.post("/api/run", json={"jd_text": "x" * 20_000, "resume_text": AI["resume"]}).status_code == 422
+
+
+def test_tailor_matches_llm_output_by_id(monkeypatch):
+    """The model may return items out of order and re-type the original text; ids still line up."""
+    class IdStub:
+        def with_structured_output(self, schema):
+            class R:
+                def invoke(_, prompt):
+                    import re
+                    if schema.__name__ != "Rewrites":
+                        raise RuntimeError("only tailoring is stubbed")
+                    found = re.findall(r"\[(\d+)\] terms: .*? \| original: (.*)", prompt)
+                    Item = schema.model_fields["items"].annotation.__args__[0]
+                    return schema(items=[Item(id=int(i), rewritten=o.replace("Built", "Developed")) for i, o in reversed(found)]
+                                  + [Item(id=99, rewritten="out-of-range id is ignored")])
+            return R()
+    monkeypatch.setattr(G, "get_llm", lambda *a, **k: IdStub())
+    r = G.start(AI["jd"], AI["resume"], "Razorpay")
+    s = r["state"]
+    tailor = next(t for t in s["trace"] if t["node"] == "tailor_bullets")
+    assert tailor["mode"] == "llm"
+    assert s["tailored"] and all(t["original"] in s["bullets"] for t in s["tailored"])
+    assert not any("out-of-range" in t["rewritten"] for t in s["tailored"])

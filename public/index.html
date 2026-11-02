@@ -90,7 +90,7 @@ async function init(){
 function load(k){const s=META.samples[k];$("company").value=s.company;$("jd").value=s.jd;$("resume").value=s.resume}
 function busy(b,btn){document.querySelectorAll("button").forEach(x=>x.disabled=b);if(btn){btn.dataset.t=btn.dataset.t||btn.innerHTML;btn.innerHTML=b?'<span class="spinner"></span>Working…':btn.dataset.t}}
 async function run(){busy(true,$("runBtn"));try{CUR=await api("/api/run",{jd_text:$("jd").value,resume_text:$("resume").value,company:$("company").value,target_ats:+$("target").value});render()}catch(e){alert("Please paste a JD and a resume (at least a few lines each).\n\n"+e.message)}busy(false,$("runBtn"))}
-async function decide(d,el){const fb=$("fb")?.value||"";if(d==="revise"&&!fb){alert("Tell the agent what to change.");return}busy(true,el);try{CUR=await api("/api/resume",{state:CUR.state,decision:d,feedback:fb});render()}catch(e){alert(e.message)}busy(false,el)}
+async function decide(d,el){const fb=$("fb")?.value||"";if(d==="revise"&&!fb){alert("Tell the agent what to change.");return}busy(true,el);try{CUR=await api("/api/resume",{token:CUR.token,decision:d,feedback:fb});render()}catch(e){alert(e.message)}busy(false,el)}
 function color(v){return v>=70?"var(--ok)":v>=45?"var(--warn)":"var(--bad)"}
 function hl(t,o){return esc(t).replace(/\(([^()]+)\)/g,(m,x)=>o.includes("("+x+")")?m:`(<mark>${x}</mark>)`)}
 function copy(id,btn){navigator.clipboard.writeText($(id).innerText);btn.textContent="Copied";setTimeout(()=>btn.textContent="Copy",1200)}
