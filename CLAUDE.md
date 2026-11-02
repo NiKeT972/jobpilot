@@ -27,6 +27,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # Window
 Key: put `GROQ_API_KEY=...` in `.env` (gitignored; template in `.env.example`). Never commit it or ask for it in chat. With no key, everything runs on rules.
 
 ## Design rules / gotchas
+- **Model:** `DEFAULT_MODEL = "openai/gpt-oss-120b"` in `llm.py`, overridable with `GROQ_MODEL`. Groq retired `llama-3.3-70b-versatile` (2026-08-16); it returned 404 `model_not_found` and every node silently fell back to rules. If all nodes show `rules` with a key set, check the logs for `model_not_found` first.
 - **Every LLM node has a rule-based fallback.** Pattern: `llm = get_llm(); if llm: try: ... return llm result; except Exception as e: llm_failed(node, e)` → then the rules path. Keep both paths working and tag trace entries with `mode` (`llm`/`rules`/`tool`/`human`); the UI shows it.
 - **Stateless human-in-the-loop:** compiled with `MemorySaver` + `interrupt_before=["human_review"]`, but each request builds a fresh graph. `resume()` re-seeds with `update_state(cfg, state, as_node="draft_cover_note")` so the next node is `human_review`. Don't rely on the checkpointer persisting between requests (serverless).
 - **Signed paused state:** `/api/run` and `/api/resume` return `token` (HMAC-SHA256 over zlib+base64 JSON, `jobpilot/state_token.py`) when paused; `/api/resume` takes `{token, decision: approve|revise, feedback}` and never accepts raw state. Key from `STATE_SIGNING_KEY`; without it a public dev key is used (`/api/health` shows `state_signing: false`). The UI sends `CUR.token`.
