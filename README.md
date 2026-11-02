@@ -2,7 +2,7 @@
 
 Paste a job description and your resume. JobPilot parses the JD, researches the company with a tool call, retrieves evidence from your resume (RAG), scores your fit, rewrites bullets to use the JD's language in a loop, **checks every rewrite against your original resume so it never invents experience**, drafts a cover note, and pauses for your approval before building the final package: tailored bullets, cover note and likely interview questions.
 
-**Live demo:** https://jobpilot-agent.vercel.app
+**Live demo:** https://jobpilot-agent-nine.vercel.app
 
 ## The agent graph
 
