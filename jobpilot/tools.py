@@ -17,7 +17,7 @@ def company_research(company: str) -> dict:
             d = r.json()
             if d.get("answer"):
                 return {"name": company, "summary": d["answer"], "source": "Tavily web search",
-                        "links": [x["url"] for x in d.get("results", [])][:3]}
+                        "links": list(dict.fromkeys(x["url"] for x in d.get("results", [])))[:3]}   # de-duplicated, order kept
         except Exception:
             pass
     try:

@@ -49,7 +49,7 @@ Most "resume optimisers" push a single match score up by stuffing keywords, whic
 
 ## Stack
 
-LangGraph 1.x · LangChain Core (tools, retrievers, structured output) · langchain-groq (Llama 3.3 70B) · rank-bm25 · httpx · FastAPI · vanilla JS · Vercel
+LangGraph 1.x · LangChain Core (tools, retrievers, structured output) · langchain-groq (gpt-oss-120b by default, set with `GROQ_MODEL`) · rank-bm25 · httpx · FastAPI · vanilla JS · Vercel
 
 ## Run locally
 

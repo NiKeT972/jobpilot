@@ -176,3 +176,13 @@ def test_tailor_matches_llm_output_by_id(monkeypatch):
     assert tailor["mode"] == "llm"
     assert s["tailored"] and all(t["original"] in s["bullets"] for t in s["tailored"])
     assert not any("out-of-range" in t["rewritten"] for t in s["tailored"])
+
+
+def test_model_setting(monkeypatch):
+    import jobpilot.llm as L
+    monkeypatch.setenv("GROQ_MODEL", "some/model")
+    assert L.model_name() == "built-in rules"            # no key -> rules, even if a model is configured
+    monkeypatch.setenv("GROQ_API_KEY", "k")
+    assert L.model_name() == "some/model"
+    monkeypatch.delenv("GROQ_MODEL")
+    assert L.model_name() == L.DEFAULT_MODEL != "llama-3.3-70b-versatile"   # retired by Groq (404)
