@@ -186,3 +186,27 @@ def test_model_setting(monkeypatch):
     assert L.model_name() == "some/model"
     monkeypatch.delenv("GROQ_MODEL")
     assert L.model_name() == L.DEFAULT_MODEL != "llama-3.3-70b-versatile"   # retired by Groq (404)
+
+
+def test_honesty_eval_does_not_regress():
+    """scripts/eval_honesty.py over evals/honesty_cases.jsonl (28 hand-labelled rewrites)."""
+    import importlib.util, pathlib
+    path = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "eval_honesty.py"
+    spec = importlib.util.spec_from_file_location("eval_honesty", path)
+    ev = importlib.util.module_from_spec(spec); spec.loader.exec_module(ev)
+    r = ev.run()
+    assert r["recall"] == 1.0, r["mistakes"]          # every known invented claim is reverted
+    assert r["precision"] >= 0.9, r["mistakes"]       # at most ~1 in 10 reverts is a false alarm
+
+
+def test_verify_catches_non_skill_claims_and_allows_implied_terms():
+    s = {"trace": [], "tailored": [
+        {"original": "Built a customer-support chatbot", "rewritten": "Built a customer-support chatbot at Google", "skill": "LLMs", "status": "proposed"},
+        {"original": "Wrote FastAPI endpoints", "rewritten": "Led a team writing FastAPI endpoints", "skill": "FastAPI", "status": "proposed"},
+        {"original": "Classifier with scikit-learn and XGBoost", "rewritten": "Classifier (Machine Learning) with scikit-learn and XGBoost", "skill": "Machine Learning", "status": "proposed"},
+        {"original": "Classifier with scikit-learn", "rewritten": "Classifier with scikit-learn and PyTorch", "skill": "Machine Learning", "status": "proposed"}]}
+    out = G.verify_claims(s)["tailored"]
+    assert out[0]["status"] == "reverted" and "Google" in out[0]["reason"]
+    assert out[1]["status"] == "reverted" and "led" in out[1]["reason"] and "team" in out[1]["reason"]
+    assert out[2]["status"] == "accepted"                                  # scikit-learn/XGBoost imply ML
+    assert out[3]["status"] == "reverted" and "PyTorch" in out[3]["reason"]  # implication never adds new tools

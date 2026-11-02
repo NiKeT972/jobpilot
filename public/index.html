@@ -52,6 +52,8 @@ details summary{cursor:pointer;color:var(--mute);font-size:13px}.mermaid{backgro
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes s{to{transform:rotate(360deg)}}
 footer{color:var(--mute);font-size:12px;text-align:center;padding:6px 0 28px}
 a{color:var(--llm)}
+.upl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 6px}.upl label.btn{display:inline-block;margin:0;font-size:12px;padding:5px 11px;color:var(--ink)}
+.done .btn{float:right;margin:-4px 0 0 10px;padding:5px 12px;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -63,7 +65,9 @@ a{color:var(--llm)}
     <div class="btns" style="margin-top:0" id="sampleBtns"></div>
     <label>Company</label><input id="company" placeholder="e.g. Razorpay">
     <label>Job description</label><textarea id="jd" rows="11" placeholder="Paste the full JD"></textarea>
-    <label>Your resume (plain text, one bullet per line)</label><textarea id="resume" rows="11"></textarea>
+    <label>Your resume (plain text, one bullet per line)</label>
+    <div class="upl"><label class="btn ghost" for="resumeFile">Upload PDF / DOCX</label><input type="file" id="resumeFile" accept=".pdf,.docx,.txt,.md" hidden onchange="uploadResume(this)"><span id="uplMsg" class="td"></span></div>
+    <textarea id="resume" rows="11"></textarea>
     <label>Target ATS keyword match</label><div class="range"><input type="range" id="target" min="40" max="100" step="5" value="75" oninput="tv.textContent=this.value"><b id="tv">75</b></div>
     <div class="btns"><button class="btn" id="runBtn" onclick="run()">Run agent</button></div>
   </div>
@@ -93,6 +97,16 @@ async function run(){busy(true,$("runBtn"));try{CUR=await api("/api/run",{jd_tex
 async function decide(d,el){const fb=$("fb")?.value||"";if(d==="revise"&&!fb){alert("Tell the agent what to change.");return}busy(true,el);try{CUR=await api("/api/resume",{token:CUR.token,decision:d,feedback:fb});render()}catch(e){alert(e.message)}busy(false,el)}
 function color(v){return v>=70?"var(--ok)":v>=45?"var(--warn)":"var(--bad)"}
 function hl(t,o){return esc(t).replace(/\(([^()]+)\)/g,(m,x)=>o.includes("("+x+")")?m:`(<mark>${x}</mark>)`)}
+async function uploadResume(input){const f=input.files[0];if(!f)return;const m=$("uplMsg");m.textContent="Reading "+f.name+"…";
+  const fd=new FormData();fd.append("file",f);
+  try{const r=await fetch("/api/resume-file",{method:"POST",body:fd});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Upload failed");
+    $("resume").value=d.text;m.textContent="✓ Loaded "+f.name+" — check the bullets below, then run the agent."}catch(e){m.textContent="✕ "+e.message}
+  input.value=""}
+async function downloadDocx(btn){const k=CUR.state.package;btn.disabled=true;
+  try{const r=await fetch("/api/package.docx",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(k)});if(!r.ok)throw new Error(await r.text());
+    const url=URL.createObjectURL(await r.blob());const a=document.createElement("a");a.href=url;
+    a.download=(r.headers.get("Content-Disposition")||"").match(/filename="(.+)"/)?.[1]||"application.docx";a.click();URL.revokeObjectURL(url)}
+  catch(e){alert("Download failed: "+e.message)}btn.disabled=false}
 function copy(id,btn){navigator.clipboard.writeText($(id).innerText);btn.textContent="Copied";setTimeout(()=>btn.textContent="Copy",1200)}
 function render(){
   const s=CUR.state,p=CUR.paused_at;let h="";
@@ -114,7 +128,7 @@ function render(){
   if(p==="human_review")h+=`<div class="card panel"><h2>👤 Review your cover note</h2><div class="td" style="margin-bottom:8px">Version ${s.cover_version}. Approve to build the final package, or tell the agent what to change.</div><div class="note">${esc(s.cover_note)}</div>
      <label>Changes</label><input id="fb" placeholder="e.g. Mention I can join immediately and keep it under 120 words">
      <div class="btns"><button class="btn human" onclick="decide('approve',this)">Approve</button><button class="btn ghost" onclick="decide('revise',this)">Revise</button></div></div>`;
-  if(s.status==="ready"){const k=s.package;h+=`<div class="card"><div class="done">✓ Application package ready for ${esc(k.title)}${k.company?" at "+esc(k.company):""} · fit ${k.fit} · ATS ${k.ats_before} → ${k.ats_after}</div></div>
+  if(s.status==="ready"){const k=s.package;h+=`<div class="card"><div class="done"><button class="btn" onclick="downloadDocx(this)">Download .docx</button>✓ Application package ready for ${esc(k.title)}${k.company?" at "+esc(k.company):""} · fit ${k.fit} · ATS ${k.ats_before} → ${k.ats_after}</div></div>
      <div class="grid2"><div class="card"><h2>Tailored resume bullets <button class="btn ghost copy" onclick="copy('pr',this)">Copy</button></h2><ul class="plain" id="pr">${k.resume.map(b=>`<li>${esc(b)}</li>`).join("")}</ul></div>
      <div class="card"><h2>Cover note <button class="btn ghost copy" onclick="copy('pc',this)">Copy</button></h2><div class="note" id="pc">${esc(k.cover_note)}</div></div></div>
      <div class="card"><h2>Likely interview questions</h2><ol>${k.interview_questions.map(q=>`<li>${esc(q)}</li>`).join("")}</ol></div>`}

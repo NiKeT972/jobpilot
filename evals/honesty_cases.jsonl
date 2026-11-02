@@ -1,0 +1,28 @@
+{"id": "term-after-synonym", "original": "Built a chatbot on Azure OpenAI GPT-4 with a retrieval pipeline over policy PDFs", "rewritten": "Built a chatbot on Azure OpenAI GPT-4 (LLMs) with a retrieval pipeline (RAG) over policy PDFs", "skill": "LLMs, RAG", "label": "honest"}
+{"id": "vector-db-term", "original": "Stored 1,200 policy PDFs as embeddings in FAISS", "rewritten": "Stored 1,200 policy PDFs as embeddings in FAISS (Vector Databases)", "skill": "Vector Databases", "label": "honest"}
+{"id": "rest-term", "original": "Wrote FastAPI endpoints for the chatbot", "rewritten": "Wrote FastAPI REST APIs for the chatbot", "skill": "REST APIs", "label": "honest"}
+{"id": "agent-term", "original": "Built an MCP server exposing internal tools to the assistant", "rewritten": "Built an MCP server (AI Agents) exposing internal tools to the assistant", "skill": "AI Agents", "label": "honest"}
+{"id": "prompt-term", "original": "Python, SQL, prompting, pandas", "rewritten": "Python, SQL, prompt engineering, pandas", "skill": "Prompt Engineering", "label": "honest"}
+{"id": "verb-change", "original": "Made a dashboard in Power BI for stock volatility", "rewritten": "Designed a Power BI dashboard (Data Visualization) for stock volatility", "skill": "Data Visualization", "label": "honest"}
+{"id": "reorder", "original": "Containerised the service with Docker and wrote FastAPI endpoints", "rewritten": "Wrote FastAPI endpoints and containerised the service with Docker", "skill": "FastAPI", "label": "honest"}
+{"id": "same-number", "original": "Cut response time from 9s to 3s by caching embeddings", "rewritten": "Cut LLM response time from 9s to 3s by caching embeddings", "skill": "LLMs", "label": "honest"}
+{"id": "sql-synonym", "original": "Queried PostgreSQL for order data", "rewritten": "Queried PostgreSQL (SQL) for order data", "skill": "SQL", "label": "honest"}
+{"id": "ml-term", "original": "Kidney disease classifier with scikit-learn and XGBoost", "rewritten": "Kidney disease classifier (Machine Learning) with scikit-learn and XGBoost", "skill": "Machine Learning", "label": "honest"}
+{"id": "cv-term", "original": "Hand-gesture controller using OpenCV and MediaPipe", "rewritten": "Computer vision hand-gesture controller using OpenCV and MediaPipe", "skill": "Computer Vision", "label": "honest"}
+{"id": "git-term", "original": "Managed the code on GitHub", "rewritten": "Managed the code with Git on GitHub", "skill": "Git", "label": "honest"}
+{"id": "add-langgraph", "original": "Built a chatbot on GPT-4 with FastAPI", "rewritten": "Built a LangGraph agent on GPT-4 with FastAPI", "skill": "LangGraph", "label": "invented"}
+{"id": "add-kubernetes", "original": "Containerised the service with Docker", "rewritten": "Containerised the service with Docker and deployed it on Kubernetes", "skill": "Kubernetes", "label": "invented"}
+{"id": "add-aws", "original": "Wrote FastAPI endpoints for the chatbot", "rewritten": "Wrote FastAPI endpoints for the chatbot deployed on AWS", "skill": "AWS", "label": "invented"}
+{"id": "add-langchain", "original": "Built a retrieval pipeline over policy PDFs", "rewritten": "Built a LangChain retrieval pipeline (RAG) over policy PDFs", "skill": "RAG, LangChain", "label": "invented"}
+{"id": "add-user-count", "original": "Built a chatbot on GPT-4", "rewritten": "Built a chatbot on GPT-4 (LLMs) serving 5,000 daily users", "skill": "LLMs", "label": "invented"}
+{"id": "inflate-number", "original": "Retrieval over 1,200 policy PDFs", "rewritten": "Retrieval (RAG) over 12,000 policy PDFs", "skill": "RAG", "label": "invented"}
+{"id": "add-percent", "original": "Cut response time by caching embeddings", "rewritten": "Cut response time by 66% by caching embeddings", "skill": "LLMs", "label": "invented"}
+{"id": "add-mlops", "original": "Kidney disease classifier with XGBoost", "rewritten": "Kidney disease classifier with XGBoost and an MLOps pipeline", "skill": "MLOps", "label": "invented"}
+{"id": "add-pytorch", "original": "Kidney disease classifier with scikit-learn", "rewritten": "Kidney disease classifier with scikit-learn and PyTorch", "skill": "Deep Learning", "label": "invented"}
+{"id": "add-finetune", "original": "Built a chatbot on Azure OpenAI GPT-4", "rewritten": "Fine-tuned GPT-4 on Azure OpenAI for a chatbot", "skill": "Transformers", "label": "invented"}
+{"id": "add-years", "original": "Built ETL scripts in Python", "rewritten": "Built ETL scripts in Python over 3 years", "skill": "Python", "label": "invented"}
+{"id": "add-eval", "original": "Built a chatbot over policy PDFs", "rewritten": "Built and evaluated a chatbot over policy PDFs using RAGAS", "skill": "LLM Evaluation", "label": "invented"}
+{"id": "add-employer", "original": "Built a customer-support chatbot", "rewritten": "Built a customer-support chatbot at Google", "skill": "LLMs", "label": "invented"}
+{"id": "add-leadership", "original": "Wrote FastAPI endpoints for the chatbot", "rewritten": "Led a team of engineers writing FastAPI endpoints for the chatbot", "skill": "FastAPI", "label": "invented"}
+{"id": "add-production", "original": "Built a chatbot prototype on GPT-4", "rewritten": "Shipped a production chatbot on GPT-4 to all customers", "skill": "LLMs", "label": "invented"}
+{"id": "add-award", "original": "Hand-gesture controller using OpenCV", "rewritten": "Award-winning hand-gesture controller using OpenCV", "skill": "Computer Vision", "label": "invented"}
