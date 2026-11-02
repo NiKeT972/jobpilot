@@ -26,11 +26,26 @@ graph TD
 | `index_resume` | **RAG** | Splits the resume into bullets and uses a custom LangChain `BaseRetriever` (BM25 + skill-synonym query expansion) to find evidence for every JD skill |
 | `score_fit` | Rules + LLM | Two scores: **real fit** (synonym-aware: "GPT-4" counts as LLMs) and **ATS keyword match** (the JD's exact words) |
 | `tailor_bullets` | LLM | Rewrites evidenced bullets to use the JD's exact terms, keeping every fact |
-| `verify_claims` | Rules | Honesty check: reverts any rewrite that adds a skill or number not in the original bullet |
+| `verify_claims` | Rules | Honesty check: reverts any rewrite that adds a skill, number, seniority/impact claim or name not in the original bullet (measured: see below) |
 | `gap_plan` | Rules | Early exit for poor matches, with a concrete plan to close the gaps |
 | `draft_cover_note` | LLM | Specific cover note grounded in your bullets and the company research |
 | `human_review` | **Human-in-the-loop** | `interrupt_before`: you approve or ask for changes, which loop back into the draft |
 | `finalize` | LLM | Final package plus interview questions aimed at your gaps |
+
+## Features
+
+- **Upload your resume** as PDF, DOCX or TXT (`/api/resume-file`, in memory only). PDF text is cleaned up so each bullet ends up on one line, even when the PDF wrapped it.
+- **Download the approved package** (cover note, tailored bullets, interview prep) as a Word file (`/api/package.docx`).
+- **Measured honesty check:** `python scripts/eval_honesty.py` runs `verify_claims` over 28 hand-labelled rewrites (`evals/honesty_cases.jsonl`) and prints recall, precision and every mistake. CI fails if recall drops below 100% or precision below 90%.
+
+## Evaluating the honesty check
+
+| | First version | Now |
+|---|---|---|
+| Invented claims caught (recall) | 12/16 (75%) | 16/16 (100%) |
+| Reverts that were correct (precision) | 12/14 (86%) | 16/17 (94%) |
+
+The first version only looked for new skills and numbers, so "…at Google", "Led a team…", "…to all customers" and "Award-winning…" got through, and it wrongly blocked "(Machine Learning)" on a scikit-learn/XGBoost bullet. It now also rejects new claim words (led, team, production, customers, award…) and new names, and allows an umbrella JD term when a more specific skill implies it (`skills.IMPLIED_BY`). Caveat: the cases were written by the author and the fixes target the misses they exposed, so treat 100% as "no known misses", not a guarantee.
 
 ## Why two scores?
 

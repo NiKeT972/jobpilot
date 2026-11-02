@@ -1,12 +1,14 @@
 """JobPilot API (FastAPI on Vercel). UI is served from public/."""
+import re
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from jobpilot import graph
+from jobpilot.files import MAX_BYTES, UnsupportedFile, extract_resume_text, package_docx
 from jobpilot.llm import llm_available, model_name
 from jobpilot.samples import SAMPLES
 from jobpilot.state_token import InvalidToken, seal, signing_configured, unseal
@@ -62,6 +64,40 @@ def resume(req: ResumeReq):
     if req.decision == "revise" and not req.feedback.strip():
         raise HTTPException(422, "Say what to change in the cover note.")
     return _respond(graph.resume(paused["state"], req.decision, req.feedback))
+
+
+@app.post("/api/resume-file")
+async def resume_file(file: UploadFile = File(...)):
+    """Upload a resume (PDF / DOCX / TXT) and get back plain text, one bullet per line, for the resume box."""
+    data = await file.read(MAX_BYTES + 1)          # read at most 1 byte past the limit, never the whole upload
+    try:
+        text = extract_resume_text(file.filename or "", data)
+    except UnsupportedFile as e:
+        raise HTTPException(422, str(e))
+    except Exception:                                # corrupt or password-protected files
+        raise HTTPException(422, "Couldn't read this file. Try another format, or paste the text instead.")
+    return {"filename": file.filename, "text": text[:MAX_TEXT]}
+
+
+class Package(BaseModel):
+    """The approved package from /api/resume. It's the user's own content, so it's validated but not signed."""
+    title: str = Field(max_length=200)
+    company: str = Field("", max_length=200)
+    fit: int = 0
+    ats_before: int = 0
+    ats_after: int = 0
+    resume: list[str] = Field(default_factory=list, max_length=80)
+    cover_note: str = Field("", max_length=5_000)
+    interview_questions: list[str] = Field(default_factory=list, max_length=20)
+
+
+@app.post("/api/package.docx")
+def package_download(pkg: Package):
+    # "AI Engineer (GenAI)" + "Razorpay" -> "AI-Engineer-GenAI-Razorpay.docx": only letters/digits, single dashes
+    safe = re.sub(r"[^A-Za-z0-9]+", "-", f"{pkg.title} {pkg.company}").strip("-")[:60] or "application"
+    return Response(package_docx(pkg.model_dump()),
+                    media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    headers={"Content-Disposition": f'attachment; filename="{safe}.docx"'})
 
 
 @app.get("/")

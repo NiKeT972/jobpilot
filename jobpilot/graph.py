@@ -286,6 +286,25 @@ def tailor_bullets(s: AppState) -> dict:
                             + ", ".join(sorted({n['skill'] for n in new})[:5]), mode)}
 
 
+# Words that make a claim about seniority, scale or recognition. A rewrite may re-word a bullet but must not
+# add these if the original didn't say them ("Led a team...", "...to all customers", "Award-winning...").
+CLAIM_WORDS = {"led", "lead", "leading", "managed", "manager", "mentored", "team", "owned", "architected",
+               "production", "customers", "users", "clients", "award", "winning", "patent", "senior", "million", "revenue"}
+
+
+def _new_claims(original: str, rewritten: str) -> tuple[list[str], list[str]]:
+    """Claim words and capitalised names in the rewrite that the original bullet never mentioned."""
+    orig_words = set(re.findall(r"[a-z]+", original.lower()))
+    claims = sorted({w for w in re.findall(r"[a-z]+", rewritten.lower()) if w in CLAIM_WORDS and w not in orig_words})
+    # Words inside skill names are judged by the skill check above, so they're skipped here ("LLMs", "Vector Databases").
+    skill_words = {w for surf in SK.find_skills(rewritten).values() for w in re.findall(r"[a-z]+", surf.lower())}
+    skill_words |= {w for k in SK.find_skills(rewritten) for w in re.findall(r"[a-z]+", k.lower())}
+    words = re.findall(r"[A-Za-z][A-Za-z]*", rewritten)
+    names = sorted({w for w in words[1:]                      # the first word is capitalised anyway
+                    if w[0].isupper() and w.lower() not in orig_words and w.lower() not in skill_words})
+    return claims, names
+
+
 def verify_claims(s: AppState) -> dict:
     out, problems = [], []
     for t in s["tailored"]:
@@ -294,19 +313,26 @@ def verify_claims(s: AppState) -> dict:
             continue
         orig_sk = set(SK.find_skills(t["original"]))
         new_sk = set(SK.find_skills(t["rewritten"]))
-        # the targeted JD term is allowed only if it maps to a skill already evidenced in the original
         targets = {SK.canonical(x.strip()) for x in t["skill"].split(",")}
-        # a JD term is allowed only if the original bullet already evidences that skill (directly or by synonym)
-        allowed = orig_sk | {x for x in targets if x in orig_sk}
-        invented = sorted(new_sk - allowed)
+        # 1. Skills: every skill in the rewrite must already be in the original (directly or by synonym), except a
+        #    targeted JD term that a more specific skill in the original implies (scikit-learn -> Machine Learning).
+        implied = {x for x in targets if SK.IMPLIED_BY.get(x, set()) & orig_sk}
+        invented = sorted(new_sk - orig_sk - implied)
+        # 2. Numbers: no new figures (user counts, percentages, years).
         nums_o = set(re.findall(r"\d+(?:\.\d+)?", t["original"]))
         new_nums = sorted(set(re.findall(r"\d+(?:\.\d+)?", t["rewritten"])) - nums_o)
-        if invented or new_nums:
+        # 3. Other claims: seniority/impact words and new names (employers, products) that weren't in the original.
+        claims, names = _new_claims(t["original"], t["rewritten"])
+        if invented or new_nums or claims or names:
             why = []
             if invented:
                 why.append("adds " + ", ".join(invented))
             if new_nums:
                 why.append("adds number(s) " + ", ".join(new_nums))
+            if claims:
+                why.append("adds claim(s) " + ", ".join(claims))
+            if names:
+                why.append("adds name(s) " + ", ".join(names))
             problems.append({"bullet": t["rewritten"], "reason": "; ".join(why)})
             out.append({**t, "status": "reverted", "reason": "; ".join(why)})
         else:

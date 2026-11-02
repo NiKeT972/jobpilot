@@ -88,3 +88,14 @@ def canonical(term: str) -> str:
             if p.search(t) and len(surf) > blen:
                 best, blen = k, len(surf)
     return best or term.strip()
+
+
+# An umbrella JD term is honestly evidenced by a more specific skill: a bullet that uses scikit-learn or XGBoost
+# shows machine learning, even though it never says "machine learning". Used only by verify_claims, and only
+# for the JD term a rewrite is targeting, so it can't sneak in unrelated skills.
+IMPLIED_BY = {
+    "Machine Learning": {"scikit-learn", "XGBoost", "Deep Learning", "PyTorch", "TensorFlow", "NLP", "Computer Vision"},
+    "Deep Learning": {"PyTorch", "TensorFlow"},
+    "LLMs": {"RAG", "Prompt Engineering", "Transformers"},
+    "Data Visualization": {"Power BI", "Tableau"},
+}
