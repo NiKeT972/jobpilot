@@ -51,12 +51,15 @@ LangGraph 1.x · LangChain Core (tools, retrievers, structured output) · langch
 ## Run locally
 
 ```bash
-pip install -r requirements.txt
-export GROQ_API_KEY=...      # optional
-export TAVILY_API_KEY=...    # optional, better company research
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt                 # app deps + pytest + uvicorn
+cp .env.example .env                                # then put your GROQ_API_KEY in .env (optional)
 uvicorn app:app --reload
 pytest -q
+python scripts/live_check.py                        # with the server running: both samples, every review path
 ```
+
+Keys are read from `.env` via python-dotenv (`GROQ_API_KEY`, optional `TAVILY_API_KEY` for better company research). Real environment variables take precedence, which is how Vercel supplies them.
 
 ---
 Built by **Niket Korgaonkar** · [GitHub](https://github.com/NiKeT972)
