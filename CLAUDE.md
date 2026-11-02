@@ -1,0 +1,36 @@
+# JobPilot: notes for Claude Code
+
+LangGraph agent that tailors a job application: parse JD → company research (tool) → RAG over resume → fit + ATS scores → tailor/verify loop → cover note → human approval → final package. Portfolio project by Niket Korgaonkar; he must be able to explain every line in interviews, so keep code simple and explain changes.
+
+Live: https://jobpilot-agent-nine.vercel.app (Vercel **auto-deploys on push to `main`**; there is no vercel.json, Vercel detects the FastAPI `app` in `app.py`).
+
+## Layout
+- `app.py`: FastAPI. `GET /api/health`, `GET /api/meta` (samples + mermaid), `POST /api/run`, `POST /api/resume`, `/` serves `public/index.html`.
+- `jobpilot/graph.py`: all nodes, routers, `build_graph()`, `start()`, `resume()`. The module docstring has the flow.
+- `jobpilot/llm.py`: `get_llm()` returns `ChatGroq` or `None` when `GROQ_API_KEY` is unset. Loads `.env` with `override=False`. `llm_failed()` logs why a node fell back.
+- `jobpilot/skills.py`: skill lexicon (canonical → synonyms, family). Drives matching, ATS scoring and the honesty check.
+- `jobpilot/retriever.py`: custom `BaseRetriever` (BM25 + synonym query expansion) over resume bullets.
+- `jobpilot/tools.py`: `@tool company_research` (Tavily if `TAVILY_API_KEY`, else Wikipedia API, else empty).
+- `jobpilot/samples.py`: two demo cases: `ai` (good match → review) and `de` (poor match → `gap_plan` early exit).
+- `public/index.html`: vanilla JS UI. It holds the paused state and posts it back on resume.
+- `scripts/live_check.py`: drives both samples and every review path through a running server and prints each node's output.
+
+## Run
+```bash
+python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # Windows: .venv\Scripts\pip
+.venv/bin/python -m pytest -q
+.venv/bin/uvicorn app:app --reload            # http://127.0.0.1:8000
+.venv/bin/python scripts/live_check.py        # in a 2nd terminal, against the running server
+```
+Key: put `GROQ_API_KEY=...` in `.env` (gitignored; template in `.env.example`). Never commit it or ask for it in chat. With no key, everything runs on rules.
+
+## Design rules / gotchas
+- **Every LLM node has a rule-based fallback.** Pattern: `llm = get_llm(); if llm: try: ... return llm result; except Exception as e: llm_failed(node, e)` → then the rules path. Keep both paths working and tag trace entries with `mode` (`llm`/`rules`/`tool`/`human`); the UI shows it.
+- **Stateless human-in-the-loop:** compiled with `MemorySaver` + `interrupt_before=["human_review"]`, but each request builds a fresh graph. `resume()` re-seeds with `update_state(cfg, state, as_node="draft_cover_note")` so the next node is `human_review`. Don't rely on the checkpointer persisting between requests (serverless).
+- **Honesty check** (`verify_claims`) reverts rewrites that add a skill (per `skills.find_skills`) or a number not in the original bullet. Fit score depends only on the original resume; only ATS can rise with tailoring.
+- Tailor loop: max 2 rounds (`attempts`), routed in `route_after_score`; fit < 35 → `gap_plan`.
+- `tailor_bullets` LLM path matches returned items to bullets by **exact `original` text**. If the model rewords `original`, that bullet is silently dropped and, if none match, the rules path runs.
+- Structured output uses `llm.with_structured_output(PydanticModel)` (Groq tool calling). Groq returns `tool_use_failed` (400) when the model emits invalid arguments; that triggers the fallback and logs a warning.
+- **Tests must never hit the network:** `tests/test_jobpilot.py` sets `GROQ_API_KEY=""` *before* importing (not `pop`), so `load_dotenv(override=False)` can't pull a real key from `.env`. `company_research` is monkeypatched. LLM paths are tested with a stub model.
+- `uvicorn` and `pytest` live in `requirements-dev.txt`; `requirements.txt` is what Vercel installs.
+- The cloud Claude Code container blocks `api.groq.com` and `en.wikipedia.org` by default; allow them in the environment's network settings to test the live LLM there.
