@@ -49,14 +49,14 @@ dump(f"draft_cover_note v{s['cover_version']}", s["cover_note"])
 assert r["paused_at"] == "human_review", r["paused_at"]
 
 print("\n=== Human review: revise ===")
-r = c.post("/api/resume", json={"state": s, "decision": "revise",
+r = c.post("/api/resume", json={"token": r["token"], "decision": "revise",
                                 "feedback": "Mention I can join immediately and keep it under 150 words"}).json()
 s = r["state"]
 seen = show_trace(s, seen)
 dump(f"draft_cover_note v{s['cover_version']}", s["cover_note"])
 
 print("\n=== Human review: approve ===")
-r = c.post("/api/resume", json={"state": s, "decision": "approve"}).json()
+r = c.post("/api/resume", json={"token": r["token"], "decision": "approve"}).json()
 s = r["state"]
 show_trace(s, seen)
 dump("finalize -> interview questions", s["package"]["interview_questions"])
