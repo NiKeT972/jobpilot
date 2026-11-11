@@ -24,7 +24,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 
 from . import skills as SK
-from .llm import get_llm, llm_failed
+from .llm import get_llm, llm_failed, run_config
 from .retriever import ResumeRetriever, split_bullets
 from .tools import company_research
 
@@ -76,6 +76,10 @@ class JobSpec(BaseModel):
     years_experience: Optional[float] = None
 
 
+REQ_HEADING = re.compile(r"^\s*(requirements|required skills|must[- ]haves?|what we need|key skills|qualifications|"
+                         r"what you(?:'ll)? need|skills required)\s*:?", re.M)
+
+
 def parse_jd(s: AppState) -> dict:
     jd = s["jd_text"]
     llm = get_llm(0)
@@ -93,15 +97,21 @@ def parse_jd(s: AppState) -> dict:
     lower = jd.lower()
     # split JD into required vs preferred sections by headings
     pref_idx = min([lower.find(k) for k in ("nice to have", "preferred", "good to have", "bonus", "plus:") if k in lower] or [len(jd)])
-    must = list(SK.find_skills(jd[:pref_idx]).keys())
-    nice = [k for k in SK.find_skills(jd[pref_idx:]).keys() if k not in must]
+    # If the JD has an explicit requirements list, that list is the must-haves; skills mentioned only in the title
+    # or "what you'll do" become nice-to-haves. Otherwise everything before the "preferred" heading is a must-have.
+    req = REQ_HEADING.search(lower[:pref_idx])
+    req_idx = req.start() if req else 0
+    must = list(SK.find_skills(jd[req_idx:pref_idx]).keys())
+    nice = [k for k in list(SK.find_skills(jd[pref_idx:]).keys()) + list(SK.find_skills(jd[:req_idx]).keys())
+            if k not in must]
+    nice = list(dict.fromkeys(nice))
     years = re.search(r"(\d+(?:\.\d+)?)\+?\s*(?:-\s*\d+\s*)?years?", lower)
     resp = [re.sub(r"^[-•*\d.)\s]+", "", l) for l in lines if re.match(r"^[-•*]", l)][:6]
     title = re.sub(r"^(job title|role|position)\s*[:\-]\s*", "", lines[0], flags=re.I) if lines else "Role"
     title = re.split(r"\s+[—–|-]\s+", title)[0]
     job = {"title": title[:80], "company": s.get("company", ""),
            "seniority": next((w for w in ("intern", "junior", "senior", "lead") if w in lower), ""),
-           "must_have": must[:12], "nice_to_have": nice[:8], "responsibilities": resp,
+           "must_have": must[:20], "nice_to_have": nice[:10], "responsibilities": resp,
            "years_experience": float(years.group(1)) if years else None}
     return {"job": job, "trace": _trace(s, "parse_jd", f"{job['title']}: {len(job['must_have'])} must-have, {len(job['nice_to_have'])} nice-to-have "
                                         "skills (lexicon match)")}
@@ -152,7 +162,7 @@ def score_fit(s: AppState) -> dict:
     job, ev = s["job"], s["evidence"]
     resume_now = "\n".join(current_bullets(s))
     resume_skills = SK.find_skills("\n".join(s["bullets"]))
-    fams = {SK.family(k) for k in resume_skills}
+    fams = {SK.family(k) for k in resume_skills} & SK.TRANSFERABLE
 
     def status(skill):
         if ev.get(skill):
@@ -487,14 +497,16 @@ def _finish(graph, cfg) -> dict:
 
 
 def start(jd_text: str, resume_text: str, company: str = "", target_ats: int = 75) -> dict:
-    graph, cfg = build_graph(), {"configurable": {"thread_id": "app"}}
+    graph = build_graph()
+    cfg = {"configurable": {"thread_id": "app"}, **run_config("start", company=company, target_ats=target_ats)}
     graph.invoke({"jd_text": jd_text, "resume_text": resume_text, "company": company, "target_ats": target_ats,
                   "trace": [], "attempts": 0}, cfg)
     return _finish(graph, cfg)
 
 
 def resume(state: dict, decision: str, feedback: str = "") -> dict:
-    graph, cfg = build_graph(), {"configurable": {"thread_id": "app"}}
+    graph = build_graph()
+    cfg = {"configurable": {"thread_id": "app"}, **run_config("resume", decision=decision)}
     graph.update_state(cfg, {**state, "decision": decision, "feedback": feedback if decision != "approve" else ""},
                        as_node=RESUME_FROM["human_review"])
     graph.invoke(None, cfg)

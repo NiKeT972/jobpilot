@@ -1,0 +1,383 @@
+{
+  "about": "End-to-end evaluation set for JobPilot. 8 job descriptions x 4 fictional resumes, 18 pairs. Labelled by hand before running the agent: each JD's must-have skills (canonical names from jobpilot/skills.py), each resume's real skills, and whether a careful recruiter would tell this candidate to apply. All companies' JDs are written for this eval; all people are fictional. The 'holdout' block (2 more JDs, 1 more resume, 6 pairs) was written after the rule fixes and is reported separately; rules are not tuned on it.",
+  "jds": {
+    "ai_engineer": {
+      "company": "Razorpay",
+      "text": "AI Engineer (GenAI) — Bengaluru\nAbout the role: You'll build LLM-powered agents that automate merchant support and onboarding.\n\nWhat you'll do:\n- Design and ship AI agents using LangChain and LangGraph\n- Build RAG pipelines over internal docs with a vector database\n- Expose models through FastAPI services and deploy them with Docker on AWS\n- Set up LLM evaluation for accuracy and hallucination\n\nRequirements:\n- Strong Python and SQL\n- Hands-on experience with LLMs, prompt engineering and RAG\n- Experience with LangChain or LangGraph and building AI agents\n- REST APIs with FastAPI, Docker, Git\n- 0-2 years of experience\n\nNice to have:\n- AWS, Kubernetes, MLOps\n- Fine-tuning with Hugging Face Transformers\n- Power BI or other dashboards\n",
+      "must_have": [
+        "Python",
+        "SQL",
+        "LLMs",
+        "Prompt Engineering",
+        "RAG",
+        "LangChain",
+        "LangGraph",
+        "AI Agents",
+        "FastAPI",
+        "REST APIs",
+        "Docker",
+        "Git"
+      ]
+    },
+    "data_analyst": {
+      "company": "Swiggy",
+      "text": "Data Analyst — Bengaluru\nYou'll turn order and delivery data into decisions for the city operations team.\n\nResponsibilities:\n- Write SQL to pull and clean data from our warehouse\n- Build and maintain Power BI dashboards for weekly business reviews\n- Run A/B tests and explain the results to non-technical stakeholders\n\nMust have:\n- Advanced SQL and Excel\n- Power BI or Tableau\n- Statistics fundamentals (hypothesis testing)\n- Python with pandas\n- Clear communication with stakeholders\n\nGood to have:\n- dbt, BigQuery\n",
+      "must_have": [
+        "SQL",
+        "Excel",
+        "Power BI",
+        "Tableau",
+        "Statistics",
+        "Python",
+        "Pandas",
+        "Communication"
+      ]
+    },
+    "ml_engineer": {
+      "company": "Meesho",
+      "text": "Machine Learning Engineer (Junior)\nBuild and ship ranking and fraud models used by millions of shoppers.\n\nWhat we need:\n- Python, scikit-learn and XGBoost for tabular models\n- PyTorch for deep learning experiments\n- Deploy models behind REST APIs with Docker\n- MLOps basics: MLflow experiment tracking and model monitoring\n- SQL for feature extraction\n\nPreferred:\n- Spark, AWS SageMaker\n",
+      "must_have": [
+        "Python",
+        "scikit-learn",
+        "XGBoost",
+        "PyTorch",
+        "Deep Learning",
+        "REST APIs",
+        "Docker",
+        "MLOps",
+        "SQL"
+      ]
+    },
+    "senior_data_engineer": {
+      "company": "Flipkart",
+      "text": "Senior Data Engineer\nRequirements:\n- 5+ years building ETL pipelines with Spark and Airflow\n- Kubernetes, Scala, Kafka, data warehousing on Snowflake\n- Strong Java\nNice to have: dbt, Terraform\n",
+      "must_have": [
+        "ETL",
+        "Spark",
+        "Airflow",
+        "Kubernetes",
+        "Scala",
+        "Kafka",
+        "Snowflake",
+        "Java"
+      ]
+    },
+    "fullstack": {
+      "company": "Zerodha",
+      "text": "Full-stack Developer\nYou'll build the web apps our traders use every day.\n\nRequirements:\n- React and TypeScript on the frontend\n- Node.js services with REST APIs\n- MongoDB or PostgreSQL\n- Git, CI/CD with GitHub Actions\n- Docker\n\nBonus: Redis, AWS\n",
+      "must_have": [
+        "React",
+        "TypeScript",
+        "JavaScript",
+        "REST APIs",
+        "MongoDB",
+        "SQL",
+        "Git",
+        "CI/CD",
+        "Docker"
+      ]
+    },
+    "bi_analyst": {
+      "company": "HDFC Bank",
+      "text": "Business Intelligence Analyst\nOwn the reporting layer for retail banking products.\n\nKey skills:\n- Power BI with DAX and data modelling\n- SQL (T-SQL)\n- Excel for ad-hoc analysis\n- Data visualization best practices\n- Presenting insights to business heads\n\nPreferred: Python, Azure\n",
+      "must_have": [
+        "Power BI",
+        "SQL",
+        "Excel",
+        "Data Visualization",
+        "Communication"
+      ]
+    },
+    "nlp_engineer": {
+      "company": "Sarvam AI",
+      "text": "NLP Engineer\nWork on speech and text models for Indian languages.\n\nRequirements:\n- Deep learning with PyTorch\n- NLP: text classification, named entity recognition\n- Hugging Face Transformers, fine-tuning BERT-style models\n- Python\n- Experience evaluating models\n\nNice to have: LLMs, vector databases, Docker\n",
+      "must_have": [
+        "Deep Learning",
+        "PyTorch",
+        "NLP",
+        "Transformers",
+        "Python"
+      ]
+    },
+    "devops": {
+      "company": "Freshworks",
+      "text": "DevOps Engineer\nKeep our SaaS platform fast and reliable.\n\nRequirements:\n- Kubernetes and Docker in production\n- Terraform for infrastructure as code\n- AWS (EC2, S3, Lambda)\n- CI/CD with Jenkins or GitHub Actions\n- Scripting in Python or Go (golang)\n- 3+ years of experience\n",
+      "must_have": [
+        "Kubernetes",
+        "Docker",
+        "Terraform",
+        "AWS",
+        "CI/CD",
+        "Python",
+        "Go"
+      ]
+    }
+  },
+  "resumes": {
+    "ai_grad": {
+      "text": "Aarav Shah\nB.Tech Computer Science, 2026 · Mumbai\n\nExperience\nAI/ML Intern, Fintech startup (May–Jul 2026)\n- Built a customer-support chatbot on Azure OpenAI GPT-4 with a retrieval pipeline over 1,200 policy PDFs stored in FAISS\n- Wrote FastAPI endpoints for the chatbot and containerised the service with Docker\n- Built an MCP server exposing internal tools so the assistant could look up order status and raise tickets\n- Cut average response time from 9s to 3s by caching embeddings and tuning chunk sizes\n\nProjects\n- Stock volatility dashboard: GARCH and EWMA models in Python with pandas, visualised in Power BI\n- Hand-gesture controller using OpenCV and MediaPipe, published as an IEEE conference paper\n- Kidney disease classifier with scikit-learn and XGBoost reaching 94% accuracy on 400 records\n- Personal productivity app in React and Supabase with row-level security\n\nSkills\n- Python, SQL (PostgreSQL), JavaScript, Git, GitHub, prompting, pandas, Power BI\n",
+      "skills": [
+        "Python",
+        "SQL",
+        "JavaScript",
+        "Git",
+        "LLMs",
+        "RAG",
+        "Vector Databases",
+        "Embeddings",
+        "FastAPI",
+        "REST APIs",
+        "Docker",
+        "AI Agents",
+        "Prompt Engineering",
+        "Pandas",
+        "Power BI",
+        "Data Visualization",
+        "Computer Vision",
+        "scikit-learn",
+        "XGBoost",
+        "Machine Learning",
+        "React",
+        "Supabase",
+        "Azure"
+      ]
+    },
+    "analyst": {
+      "text": "Priya Nair\nB.Com (Hons), 2025 · Pune\n\nExperience\nBusiness Analyst Intern, Retail chain (Jan–Jun 2026)\n- Wrote SQL queries in MySQL to build a weekly sales mart for 40 stores\n- Built Power BI dashboards with DAX measures used by regional managers every Monday\n- Ran an A/B test on store promotions and presented the results to the category head\n- Automated the monthly stock report in Excel with pivot tables and lookups\n\nProjects\n- Customer churn analysis in Python with pandas and seaborn; hypothesis testing on retention drivers\n- Tableau dashboard of Mumbai air quality data\n\nSkills\n- SQL, Excel, Power BI, Tableau, Python, pandas, statistics, stakeholder communication\n",
+      "skills": [
+        "SQL",
+        "Power BI",
+        "Statistics",
+        "Communication",
+        "Excel",
+        "Python",
+        "Pandas",
+        "Data Visualization",
+        "Tableau"
+      ]
+    },
+    "web_dev": {
+      "text": "Kabir Mehta\nB.E. Information Technology, 2025 · Ahmedabad\n\nExperience\nSoftware Developer Intern, SaaS startup (Jun–Dec 2025)\n- Built React and TypeScript screens for the billing dashboard\n- Wrote Node.js REST APIs backed by MongoDB, with Redis caching for hot endpoints\n- Set up GitHub Actions to run tests and deploy on every merge\n- Containerised services with Docker for local development\n\nProjects\n- Real-time chat app with Next.js and WebSockets\n- Expense tracker with PostgreSQL and Express\n\nSkills\n- JavaScript, TypeScript, React, Node.js, MongoDB, PostgreSQL, Redis, Git, Docker\n",
+      "skills": [
+        "React",
+        "TypeScript",
+        "JavaScript",
+        "REST APIs",
+        "MongoDB",
+        "Redis",
+        "CI/CD",
+        "Git",
+        "Docker",
+        "SQL"
+      ]
+    },
+    "data_engineer": {
+      "text": "Rohan Iyer\nB.Tech Electronics, 2021 · Hyderabad\n\nExperience\nData Engineer, E-commerce company (2021–present)\n- Built batch ETL pipelines in PySpark on Databricks processing 2 TB of clickstream data a day\n- Orchestrated 60+ Airflow DAGs and cut pipeline failures by 40%\n- Streamed order events through Kafka into Snowflake for near-real-time reporting\n- Modelled the analytics layer with dbt and wrote SQL tests\n- Managed AWS S3 and EC2 resources for the data platform\n\nSkills\n- Python, SQL, PySpark, Airflow, Kafka, Snowflake, dbt, AWS, Git\n",
+      "skills": [
+        "ETL",
+        "Spark",
+        "Airflow",
+        "Kafka",
+        "Snowflake",
+        "dbt",
+        "SQL",
+        "AWS",
+        "Python",
+        "Git"
+      ]
+    }
+  },
+  "pairs": [
+    {
+      "id": "p01",
+      "jd": "ai_engineer",
+      "resume": "ai_grad",
+      "should_apply": true
+    },
+    {
+      "id": "p02",
+      "jd": "data_analyst",
+      "resume": "ai_grad",
+      "should_apply": true
+    },
+    {
+      "id": "p03",
+      "jd": "ml_engineer",
+      "resume": "ai_grad",
+      "should_apply": true
+    },
+    {
+      "id": "p04",
+      "jd": "senior_data_engineer",
+      "resume": "ai_grad",
+      "should_apply": false
+    },
+    {
+      "id": "p05",
+      "jd": "devops",
+      "resume": "ai_grad",
+      "should_apply": false
+    },
+    {
+      "id": "p06",
+      "jd": "data_analyst",
+      "resume": "analyst",
+      "should_apply": true
+    },
+    {
+      "id": "p07",
+      "jd": "bi_analyst",
+      "resume": "analyst",
+      "should_apply": true
+    },
+    {
+      "id": "p08",
+      "jd": "ai_engineer",
+      "resume": "analyst",
+      "should_apply": false
+    },
+    {
+      "id": "p09",
+      "jd": "fullstack",
+      "resume": "analyst",
+      "should_apply": false
+    },
+    {
+      "id": "p10",
+      "jd": "nlp_engineer",
+      "resume": "analyst",
+      "should_apply": false
+    },
+    {
+      "id": "p11",
+      "jd": "fullstack",
+      "resume": "web_dev",
+      "should_apply": true
+    },
+    {
+      "id": "p12",
+      "jd": "devops",
+      "resume": "web_dev",
+      "should_apply": false
+    },
+    {
+      "id": "p13",
+      "jd": "ml_engineer",
+      "resume": "web_dev",
+      "should_apply": false
+    },
+    {
+      "id": "p14",
+      "jd": "bi_analyst",
+      "resume": "web_dev",
+      "should_apply": false
+    },
+    {
+      "id": "p15",
+      "jd": "senior_data_engineer",
+      "resume": "data_engineer",
+      "should_apply": true
+    },
+    {
+      "id": "p16",
+      "jd": "data_analyst",
+      "resume": "data_engineer",
+      "should_apply": false
+    },
+    {
+      "id": "p17",
+      "jd": "nlp_engineer",
+      "resume": "data_engineer",
+      "should_apply": false
+    },
+    {
+      "id": "p18",
+      "jd": "fullstack",
+      "resume": "data_engineer",
+      "should_apply": false
+    }
+  ],
+  "holdout": {
+    "jds": {
+      "data_scientist": {
+        "company": "PhonePe",
+        "text": "Data Scientist\nHelp us predict fraud and churn across 500 million users.\n\nWhat you'll need:\n- Python with pandas and scikit-learn\n- Solid statistics and experiment design\n- Machine learning: classification and regression models\n- SQL\n- Explaining results to product and business stakeholders\n\nNice to have: Spark, XGBoost, Tableau\n",
+        "must_have": [
+          "Python",
+          "Pandas",
+          "scikit-learn",
+          "Statistics",
+          "Machine Learning",
+          "SQL",
+          "Communication"
+        ]
+      },
+      "genai_intern": {
+        "company": "Haptik",
+        "text": "GenAI Intern (6 months)\nYou'll prototype assistants for enterprise customers.\n\nRequirements:\n- Python\n- Working knowledge of LLMs and prompt engineering\n- Built at least one RAG project\n- LangChain or LlamaIndex\n- Git and GitHub\n\nBonus: FastAPI, vector databases, evaluation of LLM outputs\n",
+        "must_have": [
+          "Python",
+          "LLMs",
+          "Prompt Engineering",
+          "RAG",
+          "LangChain",
+          "Git"
+        ]
+      }
+    },
+    "resumes": {
+      "ds_student": {
+        "text": "Sneha Kulkarni\nM.Sc. Statistics, 2026 · Pune\n\nProjects\n- Credit default prediction with scikit-learn logistic regression and random forests on 30,000 loans; ROC-AUC 0.78\n- Hypothesis testing on hospital wait-time data in Python with pandas and SciPy\n- Tableau dashboard of district-level vaccination rates\n- Wrote SQL queries in PostgreSQL to build features for the default model\n\nSkills\n- Python, pandas, scikit-learn, statistics, SQL, Tableau, Excel\n",
+        "skills": [
+          "Python",
+          "Pandas",
+          "scikit-learn",
+          "Machine Learning",
+          "Statistics",
+          "SQL",
+          "Tableau",
+          "Data Visualization",
+          "Excel"
+        ]
+      }
+    },
+    "pairs": [
+      {
+        "id": "h01",
+        "jd": "data_scientist",
+        "resume": "ds_student",
+        "should_apply": true
+      },
+      {
+        "id": "h02",
+        "jd": "data_scientist",
+        "resume": "web_dev",
+        "should_apply": false
+      },
+      {
+        "id": "h03",
+        "jd": "genai_intern",
+        "resume": "ai_grad",
+        "should_apply": true
+      },
+      {
+        "id": "h04",
+        "jd": "genai_intern",
+        "resume": "ds_student",
+        "should_apply": false
+      },
+      {
+        "id": "h05",
+        "jd": "genai_intern",
+        "resume": "data_engineer",
+        "should_apply": false
+      },
+      {
+        "id": "h06",
+        "jd": "data_scientist",
+        "resume": "ai_grad",
+        "should_apply": true
+      }
+    ]
+  }
+}

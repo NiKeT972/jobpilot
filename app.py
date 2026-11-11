@@ -1,4 +1,5 @@
 """JobPilot API (FastAPI on Vercel). UI is served from public/."""
+import json
 import re
 from pathlib import Path
 from typing import Literal
@@ -9,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from jobpilot import graph
 from jobpilot.files import MAX_BYTES, UnsupportedFile, extract_resume_text, package_docx
-from jobpilot.llm import llm_available, model_name
+from jobpilot.llm import llm_available, model_name, tracing_enabled
 from jobpilot.samples import SAMPLES
 from jobpilot.state_token import InvalidToken, seal, signing_configured, unseal
 
@@ -42,7 +43,17 @@ def _respond(result: dict) -> dict:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "llm": llm_available(), "model": model_name(), "state_signing": signing_configured()}
+    return {"ok": True, "llm": llm_available(), "model": model_name(), "state_signing": signing_configured(),
+            "tracing": tracing_enabled()}
+
+
+@app.get("/api/eval")
+def eval_reports():
+    """Evaluation reports written by scripts/eval.py (first run, rules now, and the LLM if it has been run)."""
+    out = {}
+    for f in sorted((ROOT / "evals").glob("report_*.json")):
+        out[f.stem.removeprefix("report_")] = json.loads(f.read_text(encoding="utf-8"))
+    return out
 
 
 @app.get("/api/meta")
