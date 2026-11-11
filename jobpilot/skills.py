@@ -43,7 +43,7 @@ SKILLS = {
     "React": (["react", "react.js", "reactjs", "next.js", "nextjs"], "frontend"), "Supabase": (["supabase"], "database"),
     "MongoDB": (["mongodb", "mongo"], "database"), "Redis": (["redis"], "database"),
     # soft / product
-    "Communication": (["communication", "stakeholder", "presented", "presentation"], "soft"),
+    "Communication": (["communication", "stakeholder", "stakeholders", "presented", "presentation", "presenting"], "soft"),
     "Product Thinking": (["product thinking", "product sense", "user research", "product metrics"], "soft"),
 }
 
@@ -58,19 +58,31 @@ _PATS = {k: [(_pattern(s), s) for s in sorted(set(syns + ([k.lower()] if len(k) 
 
 
 def find_skills(text: str) -> dict[str, str]:
-    """Return {canonical skill: the surface form found} for every lexicon skill present in text."""
+    """Return {canonical skill: the surface form found} for every lexicon skill present in text.
+
+    A match that sits inside a longer match of another skill doesn't count: "GitHub Actions" is CI/CD, not also
+    Git, and "text classification" is NLP, not also Machine Learning."""
     t = text.lower()
-    out = {}
+    hits = []                                   # (start, end, skill, surface)
     for k, pats in _PATS.items():
         for p, s in pats:
-            if p.search(t):
-                out[k] = s
-                break
+            hits += [(m.start(), m.end(), k, s) for m in p.finditer(t)]
+    out = {}
+    for a, b, k, s in sorted(hits, key=lambda h: h[0] - h[1]):          # longest first
+        inside_longer = any(a2 <= a and b <= b2 and (b2 - a2) > (b - a) and k2 != k for a2, b2, k2, _ in hits)
+        if not inside_longer and k not in out:
+            out[k] = s
     return out
 
 
 def has_exact(text: str, term: str) -> bool:
     return bool(_pattern(term).search(text.lower()))
+
+
+# Families where knowing one skill is real partial credit for another (PyTorch -> TensorFlow, Power BI ->
+# Tableau, Azure -> AWS). Broad families like "language" or "devops" are left out on purpose: Python doesn't make
+# you half a Go developer, and Docker doesn't make you half a Kubernetes or Terraform engineer.
+TRANSFERABLE = {"dl_framework", "ml_lib", "bi", "cloud", "vector_db", "agent_framework", "data_eng", "backend", "llm", "ml"}
 
 
 def family(skill: str) -> str:
