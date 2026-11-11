@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-os.environ["GROQ_API_KEY"] = ""; os.environ["TAVILY_API_KEY"] = ""
+os.environ["GROQ_API_KEY"] = ""; os.environ["TAVILY_API_KEY"] = ""; os.environ["LANGSMITH_TRACING"] = "false"
 
 from docx import Document
 from fastapi.testclient import TestClient

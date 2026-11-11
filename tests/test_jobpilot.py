@@ -2,7 +2,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 # Set (not pop) the keys: load_dotenv(override=False) never replaces an existing variable, so a real key in
 # .env cannot leak into these offline tests. An empty string still means "no LLM".
-os.environ["GROQ_API_KEY"] = ""; os.environ["TAVILY_API_KEY"] = ""
+os.environ["GROQ_API_KEY"] = ""; os.environ["TAVILY_API_KEY"] = ""; os.environ["LANGSMITH_TRACING"] = "false"
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
@@ -210,3 +210,40 @@ def test_verify_catches_non_skill_claims_and_allows_implied_terms():
     assert out[1]["status"] == "reverted" and "led" in out[1]["reason"] and "team" in out[1]["reason"]
     assert out[2]["status"] == "accepted"                                  # scikit-learn/XGBoost imply ML
     assert out[3]["status"] == "reverted" and "PyTorch" in out[3]["reason"]  # implication never adds new tools
+
+
+def test_end_to_end_eval_does_not_regress():
+    """scripts/eval.py over 18 labelled JD x resume pairs. Thresholds sit just below the current scores."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts"))
+    import eval as ev
+    m = ev.run(force_rules=True)
+    assert m["metrics"]["fabricated_skills_in_packages"] == 0, m["failed_pairs"]
+    assert m["metrics"]["good_matches_recommended"] == 100.0, m["failed_pairs"]
+    assert m["metrics"]["task_success"] >= 90, m["failed_pairs"]
+    assert m["metrics"]["requirement_recall"] >= 95, m["requirement_misses"]
+    assert m["holdout"]["fabricated_skills_in_packages"] == 0
+
+
+def test_partial_credit_only_within_transferable_families():
+    """Python is not partial credit for Go, and Docker is not partial credit for Kubernetes (eval pairs p05, p12)."""
+    jd = "DevOps Engineer\nRequirements:\n- Kubernetes\n- Go (golang)\n- Terraform"
+    r = c.post("/api/run", json={"jd_text": jd, "resume_text": "- Built APIs in Python and shipped them with Docker"}).json()
+    assert r["state"]["fit"]["must"] == {"Kubernetes": "missing", "Go": "missing", "Terraform": "missing"}
+    assert r["state"]["status"] == "not_recommended"
+
+
+def test_shorter_skill_inside_a_longer_one_is_not_counted():
+    assert set(SK.find_skills("CI/CD with GitHub Actions")) == {"CI/CD"}
+    assert set(SK.find_skills("Pushed code to GitHub; CI with GitHub Actions")) == {"CI/CD", "Git"}
+
+
+def test_requirements_section_is_the_must_have_list():
+    jd = "Machine Learning Engineer\nYou will build dashboards.\nRequirements:\n- Python\n- SQL\nNice to have: Docker"
+    job = G.parse_jd({"jd_text": jd, "trace": []})["job"]
+    assert job["must_have"] == ["Python", "SQL"]
+    assert "Machine Learning" in job["nice_to_have"] and "Docker" in job["nice_to_have"]
+
+
+def test_eval_endpoint_lists_reports():
+    reps = c.get("/api/eval").json()
+    assert "rules" in reps and reps["rules"]["pairs"] == 18
