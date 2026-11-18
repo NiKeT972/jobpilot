@@ -1,0 +1,250 @@
+{
+  "mode": "built-in rules",
+  "run_at": "2026-11-11 03:28 UTC",
+  "jds": 8,
+  "resumes": 4,
+  "pairs": 18,
+  "metrics": {
+    "task_success": 94.4,
+    "recommendation_accuracy": 94.4,
+    "good_matches_recommended": 100.0,
+    "poor_matches_stopped": 90.9,
+    "requirement_precision": 100.0,
+    "requirement_recall": 100.0,
+    "skill_match_precision": 98.5,
+    "skill_match_recall": 100.0,
+    "fabricated_skills_in_packages": 0,
+    "avg_ats_lift_points": 16.6,
+    "cover_notes_name_role_and_company": 100.0,
+    "avg_ms_per_pair": 42
+  },
+  "pairs_detail": [
+    {
+      "id": "p01",
+      "jd": "ai_engineer",
+      "resume": "ai_grad",
+      "should_apply": true,
+      "applied": true,
+      "fit": 77,
+      "ats_before": 30,
+      "ats_after": 65,
+      "rounds": 1
+    },
+    {
+      "id": "p02",
+      "jd": "data_analyst",
+      "resume": "ai_grad",
+      "should_apply": true,
+      "applied": true,
+      "fit": 57,
+      "ats_before": 36,
+      "ats_after": 45,
+      "rounds": 1
+    },
+    {
+      "id": "p03",
+      "jd": "ml_engineer",
+      "resume": "ai_grad",
+      "should_apply": true,
+      "applied": true,
+      "fit": 53,
+      "ats_before": 42,
+      "ats_after": 50,
+      "rounds": 1
+    },
+    {
+      "id": "p04",
+      "jd": "senior_data_engineer",
+      "resume": "ai_grad",
+      "should_apply": false,
+      "applied": false,
+      "fit": 0,
+      "ats_before": 0,
+      "ats_after": 0,
+      "rounds": 0
+    },
+    {
+      "id": "p05",
+      "jd": "devops",
+      "resume": "ai_grad",
+      "should_apply": false,
+      "applied": false,
+      "fit": 29,
+      "ats_before": 29,
+      "ats_after": 29,
+      "rounds": 0
+    },
+    {
+      "id": "p06",
+      "jd": "data_analyst",
+      "resume": "analyst",
+      "should_apply": true,
+      "applied": true,
+      "fit": 87,
+      "ats_before": 73,
+      "ats_after": 82,
+      "rounds": 1
+    },
+    {
+      "id": "p07",
+      "jd": "bi_analyst",
+      "resume": "analyst",
+      "should_apply": true,
+      "applied": true,
+      "fit": 90,
+      "ats_before": 71,
+      "ats_after": 86,
+      "rounds": 1
+    },
+    {
+      "id": "p08",
+      "jd": "ai_engineer",
+      "resume": "analyst",
+      "should_apply": false,
+      "applied": false,
+      "fit": 18,
+      "ats_before": 15,
+      "ats_after": 15,
+      "rounds": 0
+    },
+    {
+      "id": "p09",
+      "jd": "fullstack",
+      "resume": "analyst",
+      "should_apply": false,
+      "applied": false,
+      "fit": 9,
+      "ats_before": 9,
+      "ats_after": 9,
+      "rounds": 0
+    },
+    {
+      "id": "p10",
+      "jd": "nlp_engineer",
+      "resume": "analyst",
+      "should_apply": false,
+      "applied": false,
+      "fit": 16,
+      "ats_before": 12,
+      "ats_after": 12,
+      "rounds": 0
+    },
+    {
+      "id": "p11",
+      "jd": "fullstack",
+      "resume": "web_dev",
+      "should_apply": true,
+      "applied": true,
+      "fit": 90,
+      "ats_before": 73,
+      "ats_after": 91,
+      "rounds": 1
+    },
+    {
+      "id": "p12",
+      "jd": "devops",
+      "resume": "web_dev",
+      "should_apply": false,
+      "applied": false,
+      "fit": 29,
+      "ats_before": 14,
+      "ats_after": 14,
+      "rounds": 0
+    },
+    {
+      "id": "p13",
+      "jd": "ml_engineer",
+      "resume": "web_dev",
+      "should_apply": false,
+      "applied": false,
+      "fit": 27,
+      "ats_before": 17,
+      "ats_after": 17,
+      "rounds": 0
+    },
+    {
+      "id": "p14",
+      "jd": "bi_analyst",
+      "resume": "web_dev",
+      "should_apply": false,
+      "applied": true,
+      "fit": 48,
+      "ats_before": 0,
+      "ats_after": 29,
+      "rounds": 1
+    },
+    {
+      "id": "p15",
+      "jd": "senior_data_engineer",
+      "resume": "data_engineer",
+      "should_apply": true,
+      "applied": true,
+      "fit": 60,
+      "ats_before": 50,
+      "ats_after": 60,
+      "rounds": 1
+    },
+    {
+      "id": "p16",
+      "jd": "data_analyst",
+      "resume": "data_engineer",
+      "should_apply": false,
+      "applied": false,
+      "fit": 30,
+      "ats_before": 27,
+      "ats_after": 27,
+      "rounds": 0
+    },
+    {
+      "id": "p17",
+      "jd": "nlp_engineer",
+      "resume": "data_engineer",
+      "should_apply": false,
+      "applied": false,
+      "fit": 16,
+      "ats_before": 12,
+      "ats_after": 12,
+      "rounds": 0
+    },
+    {
+      "id": "p18",
+      "jd": "fullstack",
+      "resume": "data_engineer",
+      "should_apply": false,
+      "applied": false,
+      "fit": 28,
+      "ats_before": 27,
+      "ats_after": 27,
+      "rounds": 0
+    }
+  ],
+  "failed_pairs": [
+    {
+      "id": "p14",
+      "jd": "bi_analyst",
+      "resume": "web_dev",
+      "should_apply": false,
+      "applied": true,
+      "fit": 48,
+      "fabricated": [],
+      "note_ok": true
+    }
+  ],
+  "holdout": {
+    "pairs": 6,
+    "task_success": 100.0,
+    "recommendation_accuracy": 100.0,
+    "fabricated_skills_in_packages": 0,
+    "failed_pairs": []
+  },
+  "requirement_misses": [],
+  "skill_match_misses": [
+    {
+      "id": "p14",
+      "wrongly_matched": [
+        "Data Visualization"
+      ],
+      "missed": []
+    }
+  ]
+}

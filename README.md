@@ -47,6 +47,40 @@ graph TD
 
 The first version only looked for new skills and numbers, so "…at Google", "Led a team…", "…to all customers" and "Award-winning…" got through, and it wrongly blocked "(Machine Learning)" on a scikit-learn/XGBoost bullet. It now also rejects new claim words (led, team, production, customers, award…) and new names, and allows an umbrella JD term when a more specific skill implies it (`skills.IMPLIED_BY`). Caveat: the cases were written by the author and the fixes target the misses they exposed, so treat 100% as "no known misses", not a guarantee.
 
+## End-to-end evaluation
+
+`python scripts/eval.py` runs the whole agent (rules mode with `--rules`, the LLM if `GROQ_API_KEY` is set) on `evals/fit_cases.json`: **8 job descriptions × 4 fictional resumes = 18 pairs** (AI engineer, data analyst, ML engineer, senior data engineer, full-stack, BI analyst, NLP engineer and DevOps JDs; a GenAI grad, a business analyst, a web developer and a data engineer). Before running the agent, I labelled each JD's must-have skills, each resume's real skills, and whether a careful recruiter would tell that candidate to apply. Results go to `evals/report_<mode>.json`, `GET /api/eval` and the app's **Evaluation** panel.
+
+**Task success:** for a good match, the agent recommends applying, the approved package is built, the tailored resume contains no skill the original didn't have, the ATS score doesn't drop and the cover note names the role and company. For a poor match, it stops early with a gap plan.
+
+| Metric (rules mode, no LLM) | First run | Now |
+|---|---|---|
+| Task success (end to end) | 77.8% | 94.4% |
+| Right apply / don't-apply advice | 77.8% | 94.4% |
+| Good matches told to apply | 100.0% | 100.0% |
+| Poor matches stopped with a gap plan | 63.6% | 90.9% |
+| JD must-haves found | 95.2% | 100.0% |
+| Found must-haves that are real | 90.9% | 100.0% |
+| Candidate's real skills credited | 95.3% | 100.0% |
+| Credited skills that are real | 91.0% | 98.5% |
+| Invented skills in final resumes | 0 | 0 |
+| Average ATS lift (points) | 14.3 | 16.6 |
+
+What the first run found, and the general fixes:
+- **It told 4 of 11 poor matches to apply.** Partial credit was given for any skill in the same "family", so knowing Python counted as half of Go and Java, and Docker as half of Kubernetes and Terraform. Partial credit is now limited to families where a skill really transfers (PyTorch ↔ TensorFlow, Power BI ↔ Tableau, Azure ↔ AWS, LangChain ↔ LangGraph…).
+- **Docker and Git were dropped from the AI Engineer JD** by a hard cap of 12 must-haves, applied in lexicon order rather than JD order. When a JD has a *Requirements / Must have / Key skills* list, that list is now the must-haves. Skills mentioned only in the title or "what you'll do" become nice-to-haves, so a "Machine Learning Engineer" title no longer makes ML a must-have.
+- **"GitHub Actions" counted as both CI/CD and Git.** A skill found inside a longer match for another skill no longer counts. "Presenting insights" now counts as communication.
+
+The fixes don't change the honesty check's results (`scripts/eval_honesty.py` gives the same numbers before and after).
+
+**Held-out check.** The fixes were made against these 18 pairs, so "Now" is optimistic. Afterwards I wrote 6 more pairs (2 new JDs and a statistics-graduate resume, in the `holdout` block) and ran them once without tuning: **100.0% task success, 0 invented skills**. The one miss left in the main set is a web developer's "billing dashboard" being read as data-visualisation experience for a BI role: a real ambiguity in the skill lexicon, left as is.
+
+`test_end_to_end_eval_does_not_regress` fails CI if any package contains an invented skill, a good match isn't recommended, or task success drops below 90%.
+
+## Tracing with LangSmith
+
+Set `LANGSMITH_TRACING=true` and `LANGSMITH_API_KEY` (optionally `LANGSMITH_PROJECT=jobpilot`) to send every graph run, node, tool call and LLM call to LangSmith. LangChain and LangGraph read these variables themselves. Runs are named `start` / `resume` and tagged with the company, ATS target and your decision, so you can filter traces. `/api/health` shows `tracing: true` when it's on; tests force it off.
+
 ## Why two scores?
 
 Most "resume optimisers" push a single match score up by stuffing keywords, which is how candidates end up claiming tools they've never used. JobPilot separates the two:
@@ -60,7 +94,7 @@ Most "resume optimisers" push a single match score up by stuffing keywords, whic
 - **Stateless human-in-the-loop on serverless:** the paused state goes back to the browser; on resume the API rebuilds the graph and calls `update_state(..., as_node="draft_cover_note")`, so LangGraph continues from the interrupt.
 - **Tamper-proof paused state:** because the state round-trips through the browser, a user could otherwise edit it (e.g. slip in a bullet that never passed the honesty check). The API returns the paused state inside an HMAC-SHA256-signed token (`jobpilot/state_token.py`) and resumes only from a token it signed; edited tokens get a 400. Set `STATE_SIGNING_KEY` in production.
 - **Graceful degradation:** every LLM node has a deterministic fallback, so the demo works with no API keys; the UI tags each step as LLM, tool, rules or human.
-- **Tests:** every graph path, the honesty checker, skill matching and the LLM paths (with a stub model): `pytest -q`.
+- **Tests:** every graph path, the honesty checker, skill matching, the LLM paths (with a stub model) and the end-to-end eval thresholds: `pytest -q`.
 
 ## Stack
 

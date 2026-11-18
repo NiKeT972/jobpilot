@@ -53,11 +53,16 @@ details summary{cursor:pointer;color:var(--mute);font-size:13px}.mermaid{backgro
 footer{color:var(--mute);font-size:12px;text-align:center;padding:6px 0 28px}
 a{color:var(--llm)}
 .upl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 6px}.upl label.btn{display:inline-block;margin:0;font-size:12px;padding:5px 11px;color:var(--ink)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px;text-align:left}@media(max-width:700px){.steps{grid-template-columns:1fr 1fr}}
+.steps div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel2)}.steps b{display:block;font-size:13px;color:var(--ink)}.steps span{font-size:12px}
+table.ev{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}table.ev td,table.ev th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right}
+table.ev th{color:var(--mute);font-weight:500;font-size:12px}table.ev td:first-child,table.ev th:first-child{text-align:left}.up{color:var(--ok);font-weight:600}
+.small{font-size:12px;color:var(--mute);margin-top:8px}.chip[title]{cursor:help}
 .done .btn{float:right;margin:-4px 0 0 10px;padding:5px 12px;font-size:12.5px}
 </style>
 </head>
 <body>
-<header><div><span class="logo">Job<b>Pilot</b></span><span class="sub">LangGraph agent that researches, scores and tailors your application — without inventing experience</span></div><span id="mode" class="badge off">checking…</span></header>
+<header><div><span class="logo">Job<b>Pilot</b></span><span class="sub">LangGraph agent that researches, scores and tailors your application — without inventing experience</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><span id="trace" class="badge" style="display:none">LangSmith tracing on</span><span id="mode" class="badge off">checking…</span></div></header>
 <main>
 <section>
   <div class="card">
@@ -72,8 +77,10 @@ a{color:var(--llm)}
     <div class="btns"><button class="btn" id="runBtn" onclick="run()">Run agent</button></div>
   </div>
   <div class="card"><details><summary>Agent graph (LangGraph, generated from the code)</summary><pre class="mermaid" id="graph"></pre></details></div>
+  <div class="card"><details id="evalBox"><summary>Evaluation: how often does it give the right advice?</summary><div id="eval" class="td">Loading…</div></details></div>
 </section>
-<section id="out"><div class="card empty">Pick a sample or paste a JD and your resume, then run the agent.<br>You'll see every LangGraph step: the company research tool call, RAG over your resume, the tailoring loop, the honesty check, and a pause for your approval.</div></section>
+<section id="out"><div class="card empty">Pick a sample or paste a JD and your resume, then run the agent.<br>You'll see every LangGraph step: the company research tool call, RAG over your resume, the tailoring loop, the honesty check, and a pause for your approval.
+  <div class="steps"><div><b>1 · Understand</b><span>Parse the JD's must-haves and research the company (tool call).</span></div><div><b>2 · Match</b><span>RAG over your resume finds evidence for each skill; real fit vs ATS keyword score.</span></div><div><b>3 · Tailor</b><span>Rewrite bullets in the JD's words; the honesty check reverts anything invented.</span></div><div><b>4 · You decide</b><span>Approve the cover note; get a Word package and interview questions. Poor match → gap plan.</span></div></div></div></section>
 </main>
 <footer>JobPilot · portfolio project by Niket Korgaonkar · LangGraph + LangChain + FastAPI · sample JDs are illustrative and the sample candidate is fictional</footer>
 <script type="module">
@@ -86,7 +93,8 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 async function api(p,b){const r=await fetch(p,b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{});if(!r.ok)throw new Error(await r.text());return r.json()}
 function renderGraph(){if(window._mermaid&&window._graphSrc){$("graph").textContent=window._graphSrc;window._mermaid.run({nodes:[$("graph")]}).catch(()=>{})}}
 async function init(){
-  api("/api/health").then(h=>{$("mode").textContent=h.llm?`LLM online · ${h.model}`:"Built-in mode (no LLM key)";$("mode").className="badge"+(h.llm?"":" off")}).catch(()=>$("mode").textContent="API offline");
+  api("/api/health").then(h=>{$("mode").textContent=h.llm?`LLM online · ${h.model}`:"Built-in mode (no LLM key)";$("mode").className="badge"+(h.llm?"":" off");if(h.tracing)$("trace").style.display=""}).catch(()=>$("mode").textContent="API offline");
+  api("/api/eval").then(renderEval).catch(()=>{$("eval").textContent="No evaluation report found."});
   META=await api("/api/meta");
   $("sampleBtns").innerHTML=Object.entries(META.samples).map(([k,v])=>`<button class="btn ghost" onclick="load('${k}')">${esc(v.label)}</button>`).join("");
   window._graphSrc=META.graph.replace(/^---[\s\S]*?---\s*/,"");renderGraph();load("ai");
@@ -118,7 +126,7 @@ function render(){
      <div><h3 style="margin-top:0">Real fit</h3><div class="big" style="color:${color(f.score)}">${f.score}<small>/100</small></div><div class="bar"><div style="width:${f.score}%;background:${color(f.score)}"></div></div><div class="td" style="margin-top:6px">Skills you actually have (synonym-aware). Tailoring can't change this.</div></div>
      <div><h3 style="margin-top:0">ATS keyword match</h3><div class="big">${hist[0]}<span class="arrow">→</span><span style="color:${color(a.score)}">${a.score}</span><small>/100</small></div><div class="bar"><div style="width:${a.score}%;background:${color(a.score)}"></div></div><div class="td" style="margin-top:6px">JD's exact words in your resume, after ${hist.length-1} tailoring round(s). Target ${s.target_ats}.</div></div>
      <div><h3 style="margin-top:0">Agent's read</h3><div class="td" style="color:var(--ink)">${esc(f.summary)}</div></div></div>
-     <h3>Must-have skills</h3><div class="chips">${Object.entries(f.must).map(([k,v])=>`<span class="chip ${v}">${v==="matched"?"✓":v==="partial"?"~":"✕"} ${esc(k)}</span>`).join("")}</div>
+     <h3>Must-have skills <span style="text-transform:none;letter-spacing:0">(hover for the resume evidence)</span></h3><div class="chips">${Object.entries(f.must).map(([k,v])=>`<span class="chip ${v}" title="${esc((s.evidence?.[k]||[])[0]||(v==="partial"?"Related skill in your resume, not this exact one":"No evidence in your resume"))}">${v==="matched"?"✓":v==="partial"?"~":"✕"} ${esc(k)}</span>`).join("")}</div>
      ${Object.keys(f.nice).length?`<h3>Nice to have</h3><div class="chips">${Object.entries(f.nice).map(([k,v])=>`<span class="chip ${v}">${v==="matched"?"✓":v==="partial"?"~":"✕"} ${esc(k)}</span>`).join("")}</div>`:""}</div>`}
   const ci=s.company_info||{};
   if(ci.summary)h+=`<div class="card"><h2>Company research <span class="tag tool">tool · ${esc(ci.source)}</span></h2><div class="td" style="color:var(--ink)">${esc(ci.summary)}</div>${(ci.links||[]).filter(Boolean).map(l=>`<a href="${esc(l)}" target="_blank" rel="noopener" style="font-size:12px;margin-right:10px">${esc(l.replace(/^https?:\/\//,"").slice(0,48))}</a>`).join("")}</div>`;
@@ -134,6 +142,15 @@ function render(){
      <div class="card"><h2>Likely interview questions</h2><ol>${k.interview_questions.map(q=>`<li>${esc(q)}</li>`).join("")}</ol></div>`}
   $("out").innerHTML=h;$("out").scrollIntoView({behavior:"smooth",block:"start"});
 }
+const EV_ROWS=[["task_success","Task success (end to end)","%"],["recommendation_accuracy","Right apply / don't-apply advice","%"],["good_matches_recommended","Good matches told to apply","%"],["poor_matches_stopped","Poor matches stopped with a gap plan","%"],["requirement_recall","JD must-haves found","%"],["requirement_precision","Found must-haves that are real","%"],["skill_match_recall","Candidate's real skills credited","%"],["skill_match_precision","Credited skills that are real","%"],["fabricated_skills_in_packages","Invented skills in final resumes",""],["avg_ats_lift_points","Average ATS lift (points)",""]];
+function renderEval(R){
+  const now=R.rules||R.llm,first=R.rules_v1_before_fixes,llm=R.llm;if(!now){$("eval").textContent="No evaluation report found.";return}
+  const cell=(r,k,u)=>r&&r.metrics[k]!=null?r.metrics[k]+u:"–";
+  let h=`<p class="small">${now.jds} job descriptions × ${now.resumes} fictional resumes = ${now.pairs} pairs, labelled by hand before running the agent (must-have skills, the candidate's real skills, and whether they should apply). Run <code>python scripts/eval.py</code> to reproduce.</p>
+   <table class="ev"><tr><th>Metric</th>${first?"<th>First run</th>":""}<th>Rules now</th>${llm?"<th>LLM</th>":""}</tr>`+EV_ROWS.map(([k,l,u])=>`<tr><td>${l}</td>${first?`<td>${cell(first,k,u)}</td>`:""}<td class="${first&&first.metrics[k]!==now.metrics[k]&&k!=="avg_ats_lift_points"?"up":""}">${cell(now,k,u)}</td>${llm?`<td>${cell(llm,k,u)}</td>`:""}</tr>`).join("")+`</table>`;
+  if(now.holdout)h+=`<p class="small"><b>Held-out check:</b> ${now.holdout.pairs} more pairs written after the fixes and never tuned on: task success ${now.holdout.task_success}%, ${now.holdout.fabricated_skills_in_packages} invented skills.</p>`;
+  h+=`<p class="small">The honesty check has its own eval (28 labelled rewrites, <code>scripts/eval_honesty.py</code>): it catches every invented claim.</p>`;
+  $("eval").innerHTML=h}
 init();
 </script>
 </body>
